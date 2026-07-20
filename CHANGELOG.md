@@ -6,6 +6,22 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- Release automation: pushing a `v*` tag now builds the package, publishes
+  it to PyPI via trusted publishing (OIDC), and creates a GitHub Release
+  with notes extracted from this changelog (`.github/workflows/release.yml`,
+  `scripts/release_notes.py`); a manual run publishes to TestPyPI as a dry
+  run. `scripts/check_version.py` enforces that `pyproject.toml` and
+  `tts_gateway.__version__` agree (and match the tag).
+
+### Changed
+
+- The PyPI distribution is named `ttsgateway` (`pip install ttsgateway`) —
+  the `tts-gateway` name on PyPI is taken by an unrelated project. The
+  import package (`tts_gateway`) and the `tts-gateway` command are
+  unchanged.
+
 ## [0.1.0] - 2026-07-18
 
 First release.
