@@ -166,7 +166,8 @@ curl -X POST localhost:5111/v1/speak -H 'content-type: application/json' \
 ## Included integrations
 
 - **Browser** — a [userscript](integrations/browser) that speaks any selected
-  text on any website (Alt+S / Alt+X).
+  text on any website (Alt+S / Alt+X), and can **auto-read** new chat replies
+  (Alt+A) on ChatGPT/Claude/Gemini or any configurable site.
 - **Claude Code** — a [hook script](integrations/claude-code) that reads
   Claude's replies and notifications aloud.
 - **Terminal** — the `tts-gateway` CLI (`speak`, `stop`, `status`, `voices`,

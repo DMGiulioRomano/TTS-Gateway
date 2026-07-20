@@ -25,6 +25,12 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `scripts/release_notes.py`); a manual run publishes to TestPyPI as a dry
   run. `scripts/check_version.py` enforces that `pyproject.toml` and
   `tts_gateway.__version__` agree (and match the tag).
+- Browser userscript: **auto-read** of new chat replies (`Alt+A` toggles it
+  per site, remembered across reloads). A `MutationObserver` reads each new
+  assistant message once it stops streaming, skipping code blocks; existing
+  history is baselined silent. The assistant-message CSS selector has
+  built-in defaults for ChatGPT/Claude/Gemini and is configurable per site
+  from the userscript menu for any other chat.
 
 ### Changed
 
