@@ -24,6 +24,10 @@
   <a href="#documentation">Docs</a>
 </p>
 
+<p align="center">
+  <img src="assets/demo.gif" alt="tts-gateway demo: serve, speak, interrupt, status" width="720">
+</p>
+
 Send text from anywhere — a browser, Claude Code, a shell script, an editor —
 and hear it spoken on your machine. TTS engines are pluggable providers behind
 one stable API: [Piper](https://github.com/OHF-Voice/piper1-gpl) ships first,
