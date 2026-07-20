@@ -21,8 +21,10 @@ First PyPI release (distribution `tts-daemon`).
   `scripts/install.sh` one-line installer.
 - Demo assets: `assets/demo.gif` shown in the README, with a committed
   VHS script (`assets/demo.tape`) so it can be regenerated after UI
-  changes; audio samples page for GitHub Pages (`docs/samples/`) with a
-  reproducible generation script (`scripts/make_samples.sh`).
+  changes; a second `assets/hook.gif` (+ `assets/hook.tape`) showing the
+  Claude Code hook in the integrations section; audio samples page for
+  GitHub Pages (`docs/samples/`) with a reproducible generation script
+  (`scripts/make_samples.sh`).
 - Release automation: pushing a `v*` tag now builds the package, publishes
   it to PyPI via trusted publishing (OIDC), and creates a GitHub Release
   with notes extracted from this changelog (`.github/workflows/release.yml`,
