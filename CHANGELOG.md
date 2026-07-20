@@ -28,7 +28,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
-- The PyPI distribution is named `ttsgateway` (`pip install ttsgateway`) —
+- The PyPI distribution is named `tts-daemon` (`pip install tts-daemon`) —
   the `tts-gateway` name on PyPI is taken by an unrelated project. The
   import package (`tts_gateway`) and the `tts-gateway` command are
   unchanged.

@@ -15,13 +15,13 @@
 Recommended — an isolated install with [pipx](https://pipx.pypa.io):
 
 ```sh
-pipx install ttsgateway
+pipx install tts-daemon
 ```
 
 Or with plain pip (ideally inside a virtualenv):
 
 ```sh
-pip install ttsgateway
+pip install tts-daemon
 ```
 
 From a checkout (for development, see [development.md](development.md)):
@@ -32,7 +32,7 @@ cd TTS-Gateway
 pip install .
 ```
 
-The PyPI distribution is named `ttsgateway` (the `tts-gateway` name was
+The PyPI distribution is named `tts-daemon` (the `tts-gateway` name was
 already taken by an unrelated project); the command it installs is still
 `tts-gateway`. Verify:
 
@@ -174,6 +174,6 @@ do it only on a network where that is acceptable, and restrict
 ## Uninstall
 
 ```sh
-pip uninstall ttsgateway     # or: pipx uninstall ttsgateway
+pip uninstall tts-daemon     # or: pipx uninstall tts-daemon
 rm -rf ~/.config/tts-gateway ~/.local/share/tts-gateway
 ```

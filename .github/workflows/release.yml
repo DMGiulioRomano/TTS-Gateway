@@ -5,7 +5,7 @@ name: Release
 #   - push of a v* tag   -> build + publish to PyPI + GitHub Release
 #
 # Publishing uses PyPI trusted publishing (OIDC) — no token secrets.
-# Configure the trusted publisher on (test.)pypi.org for the "ttsgateway"
+# Configure the trusted publisher on (test.)pypi.org for the "tts-daemon"
 # project pointing at this repository, workflow "release.yml", and the
 # matching environment name (testpypi / pypi).
 
@@ -35,7 +35,7 @@ jobs:
           python3 -m pytest
       - name: Build sdist and wheel
         run: |
-          pip install build twine
+          pip install -U build twine packaging
           python3 -m build
           twine check dist/*
       - uses: actions/upload-artifact@v4
@@ -51,7 +51,7 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: testpypi
-      url: https://test.pypi.org/p/ttsgateway
+      url: https://test.pypi.org/p/tts-daemon
     permissions:
       id-token: write
     steps:
@@ -69,7 +69,7 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: pypi
-      url: https://pypi.org/p/ttsgateway
+      url: https://pypi.org/p/tts-daemon
     permissions:
       id-token: write
     steps:

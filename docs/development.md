@@ -113,7 +113,7 @@ notes taken from `CHANGELOG.md`.
    does the rest; watch it in the Actions tab.
 
 One-time setup (already done for this repo): configure the trusted
-publisher for the `ttsgateway` project on pypi.org and test.pypi.org
+publisher for the `tts-daemon` project on pypi.org and test.pypi.org
 (repository `DMGiulioRomano/TTS-Gateway`, workflow `release.yml`,
 environments `pypi` / `testpypi`), and create those two environments in
 the repo settings.

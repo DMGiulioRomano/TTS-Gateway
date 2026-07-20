@@ -3,11 +3,11 @@
 #   curl -fsSL https://raw.githubusercontent.com/DMGiulioRomano/TTS-Gateway/main/scripts/install.sh | sh
 #
 # Prefers pipx (isolated install); falls back to `pip install --user`.
-# The PyPI distribution is named `ttsgateway`; the command it installs
+# The PyPI distribution is named `tts-daemon`; the command it installs
 # is `tts-gateway`.
 set -eu
 
-PKG=ttsgateway
+PKG=tts-daemon
 
 if command -v pipx >/dev/null 2>&1; then
     echo ">> installing with pipx"

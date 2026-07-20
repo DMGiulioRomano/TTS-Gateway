@@ -9,8 +9,8 @@
 
 <p align="center">
   <a href="https://github.com/DMGiulioRomano/TTS-Gateway/actions/workflows/ci.yml"><img src="https://github.com/DMGiulioRomano/TTS-Gateway/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-  <a href="https://pypi.org/project/ttsgateway/"><img src="https://img.shields.io/pypi/v/ttsgateway" alt="PyPI"></a>
-  <a href="https://pypi.org/project/ttsgateway/"><img src="https://img.shields.io/pypi/dm/ttsgateway" alt="PyPI downloads"></a>
+  <a href="https://pypi.org/project/tts-daemon/"><img src="https://img.shields.io/pypi/v/tts-daemon" alt="PyPI"></a>
+  <a href="https://pypi.org/project/tts-daemon/"><img src="https://img.shields.io/pypi/dm/tts-daemon" alt="PyPI downloads"></a>
   <img src="https://img.shields.io/badge/python-3.10%2B-blue" alt="Python 3.10+">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT"></a>
   <a href="https://github.com/DMGiulioRomano/TTS-Gateway/discussions"><img src="https://img.shields.io/badge/GitHub-Discussions-2ea44f?logo=github" alt="GitHub Discussions"></a>
@@ -41,7 +41,7 @@ pipeline before setting up Piper.
 **pip / pipx** (Python 3.10+):
 
 ```sh
-pip install ttsgateway        # or: pipx install ttsgateway (isolated, recommended)
+pip install tts-daemon        # or: pipx install tts-daemon (isolated, recommended)
 ```
 
 **One-line script** (uses pipx when present, else `pip --user`):
@@ -58,7 +58,7 @@ docker build -t tts-gateway https://github.com/DMGiulioRomano/TTS-Gateway.git
 docker run --rm -p 5111:5111 tts-gateway
 ```
 
-> The PyPI distribution is `ttsgateway` (the `tts-gateway` name was taken);
+> The PyPI distribution is `tts-daemon` (the `tts-gateway` name was taken);
 > the command it installs is still `tts-gateway`.
 
 ## The 60-second tour
