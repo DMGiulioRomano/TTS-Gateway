@@ -8,6 +8,13 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- README rebuilt as a conversion funnel: centered logo (new `assets/`
+  wordmark, light + dark variants), badge row, install-first layout
+  (pip/pipx, one-line script, Docker), a "60-second tour" with real
+  outputs, a comparison table vs. raw piper / speech-dispatcher / cloud
+  APIs, and a star-history chart.
+- `Dockerfile` (API + synthesis in a container) and
+  `scripts/install.sh` one-line installer.
 - Release automation: pushing a `v*` tag now builds the package, publishes
   it to PyPI via trusted publishing (OIDC), and creates a GitHub Release
   with notes extracted from this changelog (`.github/workflows/release.yml`,
