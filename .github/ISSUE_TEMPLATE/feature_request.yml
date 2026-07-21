@@ -1,0 +1,36 @@
+name: Feature request
+description: Suggest an improvement to the gateway, CLI, or integrations.
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Requesting a new **TTS engine**? Use the "Provider request" template
+        instead — it captures the engine-specific details that make a provider
+        easy to add.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      description: Describe the use case or friction you hit, not just the solution.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: What would you like the gateway to do? API shape, CLI flag, config key…
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Workarounds you tried, or other designs you weighed.
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: Scope
+      options:
+        - label: I have checked that this isn't already tracked in an open issue or the roadmap.
+          required: true

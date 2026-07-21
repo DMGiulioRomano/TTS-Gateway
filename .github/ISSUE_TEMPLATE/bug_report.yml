@@ -1,0 +1,64 @@
+name: Bug report
+description: Something in the gateway, CLI, or an integration misbehaves.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file a bug. The more of the fields below
+        you fill in, the faster it can be reproduced and fixed.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What did you do, what did you expect, and what happened instead?
+      placeholder: |
+        Ran `tts-daemon speak "hi"` and ...
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      description: A minimal sequence of commands or requests that triggers the bug.
+      placeholder: |
+        1. tts-daemon serve
+        2. curl -X POST localhost:5111/v1/speak -d '{"text": "..."}'
+        3. ...
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: Operating system
+      placeholder: "e.g. Ubuntu 24.04, macOS 14.5, Windows 11"
+    validations:
+      required: true
+  - type: input
+    id: python
+    attributes:
+      label: Python version
+      description: Output of `python3 --version`.
+      placeholder: "e.g. 3.12.4"
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: tts-daemon version
+      description: Output of `tts-daemon --version`.
+      placeholder: "e.g. 0.2.0"
+    validations:
+      required: true
+  - type: textarea
+    id: providers
+    attributes:
+      label: Provider availability
+      description: Output of `tts-daemon providers` (shows which engines are usable).
+      render: text
+  - type: textarea
+    id: logs
+    attributes:
+      label: Server log
+      description: Relevant lines from the `tts-daemon serve` output. Set `logging.level: DEBUG` for more detail.
+      render: text

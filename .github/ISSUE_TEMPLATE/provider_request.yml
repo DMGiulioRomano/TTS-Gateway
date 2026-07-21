@@ -1,0 +1,63 @@
+name: Provider request
+description: Request (or volunteer) support for a new TTS engine.
+labels: ["enhancement", "provider"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        The gateway is engine-agnostic: a provider is one class with two
+        methods (see [docs/providers.md](../blob/main/docs/providers.md)).
+        This template captures what's needed to scope — or contribute — one.
+  - type: input
+    id: engine
+    attributes:
+      label: Engine name
+      placeholder: "e.g. Kokoro, Coqui XTTS, OpenAI TTS"
+    validations:
+      required: true
+  - type: input
+    id: link
+    attributes:
+      label: Project / API link
+      placeholder: "https://github.com/... or API docs URL"
+    validations:
+      required: true
+  - type: dropdown
+    id: location
+    attributes:
+      label: Local or cloud?
+      options:
+        - Local (runs on the user's machine)
+        - Cloud (text leaves the machine; usually an API key)
+    validations:
+      required: true
+  - type: input
+    id: license
+    attributes:
+      label: License
+      description: The engine's license (and any voice/model license, if separate).
+      placeholder: "e.g. MIT, Apache-2.0, proprietary API"
+    validations:
+      required: true
+  - type: dropdown
+    id: interface
+    attributes:
+      label: How is it invoked?
+      options:
+        - Python package
+        - CLI / subprocess
+        - HTTP API
+        - Other (describe below)
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes
+      description: Dependencies, model download size, output format (WAV/MP3), speed control, anything that affects how it maps onto the provider contract.
+  - type: checkboxes
+    id: contribute
+    attributes:
+      label: Contribution
+      options:
+        - label: I'm willing to open a PR for this provider.

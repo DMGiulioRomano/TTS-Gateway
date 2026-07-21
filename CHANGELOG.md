@@ -6,6 +6,12 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- **Community health files** (#7): YAML issue forms for bug reports, feature
+  requests, and provider requests (`.github/ISSUE_TEMPLATE/`), a pull-request
+  template, and a Contributor Covenant `CODE_OF_CONDUCT.md`.
+
 ## [0.1.0] - 2026-07-21
 
 First public release.
