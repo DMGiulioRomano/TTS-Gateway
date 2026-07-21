@@ -61,6 +61,9 @@ edge = "tts_daemon.providers.edge:EdgeProvider"
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[tool.setuptools.package-data]
+"tts_daemon.api" = ["static/*.html"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q"

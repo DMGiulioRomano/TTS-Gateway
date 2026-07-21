@@ -8,6 +8,14 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **Web playground at `/`** (#9): the root page is now an interactive,
+  build-step-free playground (single static HTML file, inline CSS/JS, no
+  external requests, dark/light aware). Type text, choose provider/voice
+  (populated from `/v1/providers` + `/v1/voices`, unavailable providers shown
+  disabled with their reason) and speed, then **Speak** (server playback),
+  **Play here** (browser playback via `/v1/synthesize`), or **Stop** — with a
+  live panel fed by the WebSocket showing the current utterance, queue, and
+  event stream. Works out of the box with the `tone` provider.
 - **Built-in Piper voice downloader** (#11): `tts-daemon download <voice>`
   fetches a voice's `.onnx` + `.onnx.json` into the models directory (atomic,
   idempotent, `--force` to refetch, progress bar with size verification), and

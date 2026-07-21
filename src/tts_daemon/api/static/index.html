@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>tts-daemon playground</title>
+<style>
+  :root {
+    --bg: #f7f7f8; --fg: #1a1a1e; --muted: #666; --card: #fff; --border: #e2e2e6;
+    --accent: #4f46e5; --accent-fg: #fff; --ok: #16a34a; --busy: #d97706; --err: #dc2626;
+    --code-bg: #8881;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #17171b; --fg: #ececf1; --muted: #9a9aa5; --card: #202027; --border: #33333c;
+      --accent: #7c6ff0; --accent-fg: #fff;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { font: 15px/1.55 system-ui, -apple-system, sans-serif; background: var(--bg);
+         color: var(--fg); margin: 0; padding: 1.5rem 1rem 3rem; }
+  main { max-width: 60rem; margin: 0 auto; }
+  h1 { font-size: 1.5rem; margin: 0 0 .25rem; }
+  h1 small { font-weight: 400; color: var(--muted); font-size: .8rem; }
+  a { color: var(--accent); }
+  .grid { display: grid; grid-template-columns: 1fr; gap: 1rem; }
+  @media (min-width: 48rem) { .grid { grid-template-columns: 3fr 2fr; } }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+          padding: 1rem 1.1rem; }
+  label { display: block; font-size: .8rem; color: var(--muted); margin: .6rem 0 .2rem; }
+  textarea, select, input[type=range] { width: 100%; }
+  textarea { min-height: 6.5rem; resize: vertical; font: inherit; padding: .6rem .7rem;
+             border-radius: 8px; border: 1px solid var(--border); background: var(--bg);
+             color: var(--fg); }
+  select { padding: .45rem .5rem; border-radius: 8px; border: 1px solid var(--border);
+           background: var(--bg); color: var(--fg); font: inherit; }
+  .row { display: flex; gap: .8rem; flex-wrap: wrap; align-items: end; }
+  .row > div { flex: 1 1 8rem; }
+  .controls { display: flex; gap: .5rem; flex-wrap: wrap; margin-top: 1rem; align-items: center; }
+  button { font: inherit; padding: .5rem .9rem; border-radius: 8px; border: 1px solid var(--border);
+           background: var(--card); color: var(--fg); cursor: pointer; }
+  button.primary { background: var(--accent); color: var(--accent-fg); border-color: transparent; }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  .check { display: inline-flex; align-items: center; gap: .35rem; color: var(--muted);
+           font-size: .85rem; }
+  .speed-val { font-variant-numeric: tabular-nums; color: var(--muted); font-size: .85rem; }
+  .badge { display: inline-block; padding: .1rem .5rem; border-radius: 999px; font-size: .72rem;
+           font-weight: 600; background: var(--code-bg); }
+  .badge.speaking, .badge.synthesizing { background: color-mix(in srgb, var(--busy) 22%, transparent); color: var(--busy); }
+  .badge.finished { background: color-mix(in srgb, var(--ok) 22%, transparent); color: var(--ok); }
+  .badge.failed, .badge.cancelled { background: color-mix(in srgb, var(--err) 22%, transparent); color: var(--err); }
+  .queue-item, .event { font-size: .82rem; padding: .3rem .1rem; border-bottom: 1px solid var(--border); }
+  .queue-item:last-child, .event:last-child { border-bottom: none; }
+  .events { max-height: 15rem; overflow-y: auto; }
+  .event time { color: var(--muted); font-variant-numeric: tabular-nums; }
+  .muted { color: var(--muted); }
+  code { background: var(--code-bg); padding: .1em .35em; border-radius: 4px; }
+  #toast { position: fixed; bottom: 1rem; left: 50%; transform: translateX(-50%);
+           background: var(--err); color: #fff; padding: .5rem .9rem; border-radius: 8px;
+           font-size: .85rem; opacity: 0; transition: opacity .2s; pointer-events: none; }
+  #toast.show { opacity: 1; }
+  .conn { font-size: .75rem; }
+  .conn.on { color: var(--ok); } .conn.off { color: var(--err); }
+</style>
+</head>
+<body>
+<main id="app" data-tts-playground>
+  <h1>tts-daemon <small>playground · <a href="/docs">API docs</a></small></h1>
+  <p class="muted">Type text, pick a voice, and hear it — locally.</p>
+
+  <div class="grid">
+    <section class="card">
+      <label for="text">Text</label>
+      <textarea id="text" placeholder="Say something…">Hello from the tts-daemon playground.</textarea>
+
+      <div class="row">
+        <div>
+          <label for="provider">Provider</label>
+          <select id="provider"></select>
+        </div>
+        <div>
+          <label for="voice">Voice</label>
+          <select id="voice"></select>
+        </div>
+      </div>
+
+      <label for="speed">Speed <span class="speed-val" id="speedVal">1.0×</span></label>
+      <input type="range" id="speed" min="0.5" max="2" step="0.1" value="1">
+
+      <div class="controls">
+        <button class="primary" id="speak">▶ Speak</button>
+        <button id="playHere">🔊 Play here</button>
+        <button id="stop">■ Stop</button>
+        <label class="check"><input type="checkbox" id="interrupt"> interrupt</label>
+      </div>
+      <audio id="player" hidden></audio>
+    </section>
+
+    <section class="card">
+      <div style="display:flex; justify-content:space-between; align-items:center">
+        <strong>Live</strong>
+        <span class="conn off" id="conn">● offline</span>
+      </div>
+      <label>Now</label>
+      <div id="current" class="muted">idle</div>
+      <label>Queue (<span id="queueSize">0</span>)</label>
+      <div id="queue" class="muted">empty</div>
+      <label>Events</label>
+      <div id="events" class="events muted">waiting…</div>
+    </section>
+  </div>
+</main>
+<div id="toast"></div>
+
+<script>
+"use strict";
+const $ = (id) => document.getElementById(id);
+const api = (path, opts) => fetch(path, opts);
+let allVoices = [];
+
+function toast(msg) {
+  const t = $("toast"); t.textContent = msg; t.classList.add("show");
+  setTimeout(() => t.classList.remove("show"), 3500);
+}
+
+async function loadProviders() {
+  const res = await api("/v1/providers");
+  const { providers } = await res.json();
+  const sel = $("provider");
+  sel.innerHTML = "";
+  for (const p of providers) {
+    const opt = document.createElement("option");
+    opt.value = p.name;
+    opt.textContent = p.available ? (p.name + (p.default ? " (default)" : ""))
+                                   : `${p.name} — unavailable`;
+    opt.disabled = !p.available;
+    if (!p.available && p.reason) opt.title = p.reason;
+    if (p.default) opt.selected = true;
+    sel.appendChild(opt);
+  }
+}
+
+async function loadVoices() {
+  const res = await api("/v1/voices");
+  allVoices = (await res.json()).voices;
+  refreshVoiceOptions();
+}
+
+function refreshVoiceOptions() {
+  const provider = $("provider").value;
+  const sel = $("voice");
+  sel.innerHTML = "";
+  const def = document.createElement("option");
+  def.value = ""; def.textContent = "(default)";
+  sel.appendChild(def);
+  for (const v of allVoices.filter((v) => v.provider === provider)) {
+    const opt = document.createElement("option");
+    opt.value = v.id;
+    opt.textContent = v.language ? `${v.name} · ${v.language}` : v.name;
+    sel.appendChild(opt);
+  }
+}
+
+function body() {
+  const b = { text: $("text").value, speed: parseFloat($("speed").value) };
+  if ($("provider").value) b.provider = $("provider").value;
+  if ($("voice").value) b.voice = $("voice").value;
+  return b;
+}
+
+async function post(path, payload) {
+  const res = await api(path, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    let detail = res.statusText;
+    try { detail = (await res.json()).detail || detail; } catch (_) {}
+    throw new Error(detail);
+  }
+  return res;
+}
+
+$("speak").onclick = async () => {
+  try { await post("/v1/speak", { ...body(), interrupt: $("interrupt").checked }); }
+  catch (e) { toast(e.message); }
+};
+
+$("playHere").onclick = async () => {
+  try {
+    const res = await post("/v1/synthesize", body());
+    const blob = await res.blob();
+    const player = $("player");
+    player.src = URL.createObjectURL(blob);
+    player.play();
+  } catch (e) { toast(e.message); }
+};
+
+$("stop").onclick = () => post("/v1/stop", {}).catch((e) => toast(e.message));
+
+$("provider").onchange = refreshVoiceOptions;
+$("speed").oninput = () => { $("speedVal").textContent = parseFloat($("speed").value).toFixed(1) + "×"; };
+
+function renderStatus(status) {
+  const cur = status.queue.current;
+  if (cur) {
+    $("current").innerHTML = `<span class="badge ${cur.state}">${cur.state}</span> ` +
+      escapeHtml(ellipsis(cur.text));
+  } else {
+    $("current").textContent = "idle";
+  }
+  const q = status.queue.queued;
+  $("queueSize").textContent = q.length;
+  $("queue").innerHTML = q.length
+    ? q.map((u) => `<div class="queue-item">${escapeHtml(ellipsis(u.text))}</div>`).join("")
+    : '<span class="muted">empty</span>';
+}
+
+async function refreshStatus() {
+  try { renderStatus(await (await api("/v1/status")).json()); } catch (_) {}
+}
+
+function logEvent(ev) {
+  const box = $("events");
+  if (box.classList.contains("muted")) { box.classList.remove("muted"); box.innerHTML = ""; }
+  const div = document.createElement("div");
+  div.className = "event";
+  const t = new Date((ev.timestamp || Date.now() / 1000) * 1000).toLocaleTimeString();
+  div.innerHTML = `<time>${t}</time> <span class="badge">${escapeHtml(ev.type)}</span>`;
+  box.prepend(div);
+  while (box.children.length > 40) box.lastChild.remove();
+}
+
+function connectWS() {
+  const proto = location.protocol === "https:" ? "wss" : "ws";
+  const ws = new WebSocket(`${proto}://${location.host}/v1/ws`);
+  ws.onopen = () => { $("conn").className = "conn on"; $("conn").textContent = "● live"; };
+  ws.onclose = () => {
+    $("conn").className = "conn off"; $("conn").textContent = "● offline";
+    setTimeout(connectWS, 2000);
+  };
+  ws.onmessage = (msg) => {
+    let data; try { data = JSON.parse(msg.data); } catch (_) { return; }
+    if (data.type === "event") { logEvent(data.event); refreshStatus(); }
+  };
+}
+
+function ellipsis(s, n = 70) { s = s.replace(/\s+/g, " ").trim(); return s.length > n ? s.slice(0, n - 1) + "…" : s; }
+function escapeHtml(s) { return s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
+
+(async function init() {
+  try { await loadProviders(); await loadVoices(); } catch (e) { toast("Could not reach the gateway: " + e.message); }
+  await refreshStatus();
+  connectWS();
+})();
+</script>
+</body>
+</html>

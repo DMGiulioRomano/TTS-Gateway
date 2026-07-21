@@ -9,6 +9,7 @@ embedding straightforward.
 from __future__ import annotations
 
 from contextlib import asynccontextmanager
+from importlib.resources import files
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -107,34 +108,28 @@ def create_app(config: GatewayConfig | None = None) -> FastAPI:
 
     @app.get("/", response_class=HTMLResponse, include_in_schema=False)
     async def index() -> str:
-        return _INDEX_HTML
+        return _playground_html()
 
     return app
 
 
-_INDEX_HTML = f"""\
-<!doctype html>
-<html lang="en">
-<head><meta charset="utf-8"><title>tts-daemon</title>
-<style>
-  body {{ font: 16px/1.6 system-ui, sans-serif; max-width: 42rem;
-         margin: 3rem auto; padding: 0 1rem; }}
-  code {{ background: #8881; padding: .1em .35em; border-radius: 4px; }}
-</style>
-</head>
-<body>
-<h1>tts-daemon <small>v{__version__}</small></h1>
-<p>A local text-to-speech gateway. Interactive API docs: <a href="/docs">/docs</a></p>
-<p>Try it:</p>
-<pre><code>curl -X POST localhost:5111/v1/speak \\
-  -H 'content-type: application/json' \\
-  -d '{{"text": "Hello from the gateway"}}'</code></pre>
-<p>Endpoints: <code>POST /v1/speak</code>, <code>POST /v1/stop</code>,
-<code>POST /v1/synthesize</code>, <code>POST /v1/audio/speech</code>,
-<code>GET /v1/status</code>,
-<code>GET /v1/voices</code>, <code>GET /v1/providers</code>,
-<code>GET /v1/events</code>, <code>WS /v1/ws</code>,
-<code>GET /health</code></p>
-</body>
-</html>
-"""
+def _playground_html() -> str:
+    """The static playground page, read from package data and cached."""
+    global _PLAYGROUND_HTML
+    if _PLAYGROUND_HTML is None:
+        try:
+            _PLAYGROUND_HTML = (
+                files("tts_daemon.api").joinpath("static/index.html").read_text(encoding="utf-8")
+            )
+        except (FileNotFoundError, ModuleNotFoundError):
+            _PLAYGROUND_HTML = _FALLBACK_HTML
+    return _PLAYGROUND_HTML
+
+
+_PLAYGROUND_HTML: str | None = None
+
+#: Shown only if the packaged playground file is somehow missing.
+_FALLBACK_HTML = (
+    "<!doctype html><meta charset='utf-8'><title>tts-daemon</title>"
+    "<h1>tts-daemon</h1><p>Interactive API docs: <a href='/docs'>/docs</a></p>"
+)

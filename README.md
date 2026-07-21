@@ -67,6 +67,10 @@ $ tts-daemon serve
 INFO:     Uvicorn running on http://127.0.0.1:5111 (Press CTRL+C to quit)
 ```
 
+Open **<http://localhost:5111>** for the interactive playground — type text,
+pick a voice, hear it, and watch the queue and events update live. Or drive it
+from the terminal:
+
 Speak from a second terminal (beeps until Piper is set up):
 
 ```console

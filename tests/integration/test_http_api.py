@@ -27,11 +27,14 @@ class TestMeta:
         assert body["status"] == "ok"
         assert body["version"]
 
-    def test_index_page_links_docs(self, client: TestClient) -> None:
+    def test_index_serves_playground(self, client: TestClient) -> None:
         response = client.get("/")
         assert response.status_code == 200
         assert "text/html" in response.headers["content-type"]
         assert "/docs" in response.text
+        # The interactive playground (not the old static info page).
+        assert "data-tts-playground" in response.text
+        assert "/v1/ws" in response.text  # wires up the live WebSocket panel
 
     def test_openapi_schema_is_served(self, client: TestClient) -> None:
         assert client.get("/openapi.json").status_code == 200
