@@ -1,0 +1,316 @@
+"""Browse and download Piper voices from the ``rhasspy/piper-voices`` catalog.
+
+Pure standard library (``urllib``) so the CLI ``download`` command works without
+the server's dependencies — the same rule the HTTP client follows. Nothing here
+imports FastAPI or the gateway internals.
+
+The catalog is the ``voices.json`` manifest published under the Hugging Face
+repo ``rhasspy/piper-voices``; each voice lists its ``.onnx`` model and the
+``.onnx.json`` config, with per-file sizes. Files are resolved under the same
+repo. Downloads stream to a ``*.part`` sidecar and are renamed into place only
+after the byte count is verified, so an interrupted download never leaves a
+half-written model that Piper would choke on.
+"""
+
+from __future__ import annotations
+
+import difflib
+import http.client
+import json
+import urllib.error
+import urllib.request
+from collections.abc import Callable, Iterable
+from dataclasses import dataclass, field
+from pathlib import Path
+from typing import Any
+
+#: Repo root that hosts both ``voices.json`` and the model files.
+DEFAULT_BASE_URL = "https://huggingface.co/rhasspy/piper-voices/resolve/main"
+MANIFEST_NAME = "voices.json"
+
+_DOWNLOAD_CHUNK = 64 * 1024
+_DEFAULT_TIMEOUT = 60.0
+
+#: Progress callback signature: ``(filename, bytes_done, bytes_total)``.
+ProgressCallback = Callable[[str, int, int], None]
+
+
+class VoiceCatalogError(Exception):
+    """Fetching the catalog or a voice failed (offline, unknown id, bad size)."""
+
+
+@dataclass(frozen=True)
+class VoiceInfo:
+    """One downloadable Piper voice, distilled from the manifest entry."""
+
+    id: str
+    language: str | None
+    quality: str | None
+    num_speakers: int
+    onnx_path: str
+    config_path: str
+    onnx_size: int = 0
+    config_size: int = 0
+
+    @property
+    def size_bytes(self) -> int:
+        return self.onnx_size + self.config_size
+
+    @property
+    def size_mb(self) -> float:
+        return self.size_bytes / (1024 * 1024)
+
+
+@dataclass(frozen=True)
+class DownloadResult:
+    """Outcome of a :meth:`VoiceCatalog.download` call."""
+
+    voice_id: str
+    models_dir: Path
+    paths: list[Path] = field(default_factory=list)
+    downloaded: list[Path] = field(default_factory=list)
+
+    @property
+    def skipped(self) -> bool:
+        """True when every file was already present (nothing fetched)."""
+        return not self.downloaded
+
+
+def _as_int(value: object, default: int = 0) -> int:
+    try:
+        return int(value)  # type: ignore[arg-type]
+    except (TypeError, ValueError):
+        return default
+
+
+def _language_code(block: object) -> str | None:
+    if isinstance(block, dict):
+        code = block.get("code") or block.get("family")
+        return str(code) if code else None
+    if isinstance(block, str):
+        return block
+    return None
+
+
+def _find_file(files: dict[str, Any], filename: str) -> str | None:
+    """The manifest path whose basename is ``filename`` (paths are repo-relative)."""
+    for path in files:
+        if path.rsplit("/", 1)[-1] == filename:
+            return path
+    return None
+
+
+def parse_catalog(manifest: dict[str, Any]) -> dict[str, VoiceInfo]:
+    """Turn the raw ``voices.json`` mapping into ``{id: VoiceInfo}``.
+
+    Entries that do not expose both an ``.onnx`` and a matching ``.onnx.json``
+    are skipped rather than raising: a partial manifest still lists the voices
+    that can actually be installed.
+    """
+    catalog: dict[str, VoiceInfo] = {}
+    for key, entry in manifest.items():
+        if not isinstance(entry, dict):
+            continue
+        files = entry.get("files")
+        if not isinstance(files, dict):
+            continue
+        voice_id = str(entry.get("key") or key)
+        onnx_path = _find_file(files, f"{voice_id}.onnx")
+        config_path = _find_file(files, f"{voice_id}.onnx.json")
+        if not onnx_path or not config_path:
+            continue
+        catalog[voice_id] = VoiceInfo(
+            id=voice_id,
+            language=_language_code(entry.get("language")),
+            quality=(str(entry["quality"]) if entry.get("quality") else None),
+            num_speakers=_as_int(entry.get("num_speakers"), default=1),
+            onnx_path=onnx_path,
+            config_path=config_path,
+            onnx_size=_as_int(files.get(onnx_path, {}).get("size_bytes")),
+            config_size=_as_int(files.get(config_path, {}).get("size_bytes")),
+        )
+    return catalog
+
+
+def closest_matches(query: str, ids: Iterable[str], limit: int = 6) -> list[str]:
+    """Voice ids most likely meant by ``query`` — substring hits first, then fuzzy."""
+    all_ids = list(ids)
+    lowered = query.lower()
+    ordered: list[str] = [i for i in all_ids if lowered in i.lower()]
+    for candidate in difflib.get_close_matches(query, all_ids, n=limit, cutoff=0.4):
+        if candidate not in ordered:
+            ordered.append(candidate)
+    return ordered[:limit]
+
+
+def _language_matches(voice_language: str | None, query: str) -> bool:
+    if not voice_language:
+        return False
+    voice = voice_language.lower()
+    wanted = query.lower()
+    return voice == wanted or voice.startswith(f"{wanted}_") or voice.split("_")[0] == wanted
+
+
+class VoiceCatalog:
+    """Reads the Piper voice manifest and downloads voices, using only stdlib.
+
+    The manifest is fetched once and cached for the life of the instance (the
+    CLI builds one per invocation), so ``--list`` followed by a ``download`` in
+    the same process hits the network a single time for the catalog.
+    """
+
+    def __init__(
+        self, base_url: str = DEFAULT_BASE_URL, *, timeout: float = _DEFAULT_TIMEOUT
+    ) -> None:
+        self.base_url = base_url.rstrip("/")
+        self.timeout = timeout
+        self._voices: dict[str, VoiceInfo] | None = None
+
+    def voices(self) -> dict[str, VoiceInfo]:
+        """The whole catalog as ``{id: VoiceInfo}`` (fetched once, then cached)."""
+        if self._voices is None:
+            raw = self._fetch_json(f"{self.base_url}/{MANIFEST_NAME}")
+            if not isinstance(raw, dict):
+                raise VoiceCatalogError("the Piper voices manifest is not a JSON object")
+            self._voices = parse_catalog(raw)
+        return self._voices
+
+    def list(self, language: str | None = None) -> list[VoiceInfo]:
+        """Catalog voices sorted by id, optionally filtered by language.
+
+        ``language`` accepts a family (``it``) or a full code (``it_IT``).
+        """
+        voices = self.voices().values()
+        if language:
+            voices = [v for v in voices if _language_matches(v.language, language)]
+        return sorted(voices, key=lambda voice: voice.id)
+
+    def get(self, voice_id: str) -> VoiceInfo:
+        """Look up one voice, raising a helpful error (with suggestions) if absent."""
+        voices = self.voices()
+        info = voices.get(voice_id)
+        if info is None:
+            raise VoiceCatalogError(_unknown_voice_message(voice_id, voices))
+        return info
+
+    def download(
+        self,
+        voice_id: str,
+        models_dir: str | Path,
+        *,
+        force: bool = False,
+        progress: ProgressCallback | None = None,
+    ) -> DownloadResult:
+        """Download ``voice_id`` (``.onnx`` + ``.onnx.json``) into ``models_dir``.
+
+        The directory is created if missing. Already-present files are skipped
+        unless ``force`` is set. Each file streams to ``<name>.part`` and is
+        renamed into place only once its byte count checks out, so the operation
+        is safe to interrupt and repeat.
+        """
+        info = self.get(voice_id)
+        directory = Path(models_dir).expanduser()
+        directory.mkdir(parents=True, exist_ok=True)
+
+        specs = (
+            (info.onnx_path, f"{info.id}.onnx", info.onnx_size),
+            (info.config_path, f"{info.id}.onnx.json", info.config_size),
+        )
+        paths: list[Path] = []
+        downloaded: list[Path] = []
+        for remote_path, name, size in specs:
+            dest = directory / name
+            paths.append(dest)
+            if dest.is_file() and not force:
+                continue
+            self._download_file(
+                f"{self.base_url}/{remote_path}", dest, expected_size=size, progress=progress
+            )
+            downloaded.append(dest)
+        return DownloadResult(
+            voice_id=info.id, models_dir=directory, paths=paths, downloaded=downloaded
+        )
+
+    # ------------------------------------------------------------- internals
+
+    def _fetch_json(self, url: str) -> Any:
+        try:
+            with urllib.request.urlopen(url, timeout=self.timeout) as response:
+                data = response.read()
+        except urllib.error.URLError as exc:
+            raise VoiceCatalogError(_offline_message(exc)) from exc
+        try:
+            return json.loads(data.decode("utf-8"))
+        except (json.JSONDecodeError, UnicodeDecodeError) as exc:
+            raise VoiceCatalogError(
+                f"the Piper voices manifest at {url} is not valid JSON: {exc}"
+            ) from exc
+
+    def _download_file(
+        self,
+        url: str,
+        dest: Path,
+        *,
+        expected_size: int = 0,
+        progress: ProgressCallback | None = None,
+    ) -> None:
+        part = dest.with_name(f"{dest.name}.part")
+        header_len = 0
+        written = 0
+        try:
+            with urllib.request.urlopen(url, timeout=self.timeout) as response:
+                header_len = _as_int(response.headers.get("Content-Length"))
+                total = expected_size or header_len
+                with open(part, "wb") as handle:
+                    while True:
+                        chunk = response.read(_DOWNLOAD_CHUNK)
+                        if not chunk:
+                            break
+                        handle.write(chunk)
+                        written += len(chunk)
+                        if progress is not None and total:
+                            progress(dest.name, min(written, total), total)
+        except (urllib.error.URLError, http.client.IncompleteRead) as exc:
+            part.unlink(missing_ok=True)
+            raise VoiceCatalogError(_offline_message(exc)) from exc
+        except OSError as exc:
+            part.unlink(missing_ok=True)
+            raise VoiceCatalogError(f"cannot write voice file {dest}: {exc}") from exc
+
+        problem = _verify_size(url, written, header_len, expected_size)
+        if problem is not None:
+            part.unlink(missing_ok=True)
+            raise VoiceCatalogError(problem)
+        part.replace(dest)  # atomic on the same filesystem
+
+
+def _verify_size(url: str, written: int, header_len: int, expected_size: int) -> str | None:
+    """Return an error message when the download does not match what was promised."""
+    if header_len and written != header_len:
+        return f"download of {url} was truncated: got {written} of {header_len} bytes"
+    if expected_size and header_len and header_len != expected_size:
+        return (
+            f"size mismatch for {url}: the server sent {header_len} bytes but the catalog "
+            f"lists {expected_size}; the voice may have changed — retry, or download it manually"
+        )
+    if expected_size and not header_len and written != expected_size:
+        return f"download of {url} was truncated: got {written} of {expected_size} bytes"
+    return None
+
+
+def _offline_message(exc: Exception) -> str:
+    reason = getattr(exc, "reason", None) or exc
+    return (
+        f"cannot reach the Piper voice catalog ({reason}). Check your internet "
+        "connection, or download the .onnx and .onnx.json files manually into your "
+        "models_dir."
+    )
+
+
+def _unknown_voice_message(voice_id: str, voices: dict[str, VoiceInfo]) -> str:
+    suggestions = closest_matches(voice_id, voices)
+    hint = f" Did you mean: {', '.join(suggestions)}?" if suggestions else ""
+    return (
+        f"unknown Piper voice {voice_id!r}.{hint} "
+        "Run 'tts-daemon download --list' to browse the catalog."
+    )

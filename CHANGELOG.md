@@ -8,6 +8,17 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **Built-in Piper voice downloader** (`tts-daemon download <voice>`): fetches a
+  voice's `.onnx` model and `.onnx.json` config into the configured `models_dir`
+  (created if missing) straight from the `rhasspy/piper-voices` catalog, so
+  onboarding no longer needs `python3 -m piper.download_voices`. Downloads are
+  size-verified, streamed to a `*.part` sidecar and renamed atomically, and
+  idempotent (already-present voices are skipped; `--force` re-fetches).
+  `tts-daemon download --list [--language xx]` browses the catalog (id, language,
+  quality, size). Unknown ids suggest the closest matches; offline gives an
+  actionable message. New stdlib-only `tts_daemon.voices` module (no new runtime
+  deps); the piper `availability()` hint and the README/install quickstart now
+  point at the command.
 - **Optional bearer-token authentication** (`server.auth_token`, env
   `TTS_DAEMON__SERVER__AUTH_TOKEN`): off by default (unauthenticated on
   loopback). When set, every `/v1` route requires `Authorization: Bearer

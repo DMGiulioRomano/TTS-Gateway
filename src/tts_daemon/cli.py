@@ -17,6 +17,7 @@ from pathlib import Path
 from tts_daemon.client import GatewayClient, GatewayClientError
 from tts_daemon.core.errors import ConfigError
 from tts_daemon.defaults import DEFAULT_BASE_URL
+from tts_daemon.voices import VoiceCatalog, VoiceCatalogError
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -24,7 +25,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     try:
         return args.handler(args)
-    except (GatewayClientError, ConfigError) as exc:
+    except (GatewayClientError, ConfigError, VoiceCatalogError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
     except KeyboardInterrupt:
@@ -89,6 +90,29 @@ def build_parser() -> argparse.ArgumentParser:
     providers.add_argument("--json", action="store_true", help="print raw JSON")
     _add_url(providers)
     providers.set_defaults(handler=cmd_providers)
+
+    download = subparsers.add_parser(
+        "download", help="download a Piper voice into the models directory"
+    )
+    download.add_argument(
+        "voice", nargs="?", help="voice id to download (e.g. en_US-lessac-medium)"
+    )
+    download.add_argument(
+        "--list",
+        action="store_true",
+        dest="list_voices",
+        help="list the catalog instead of downloading",
+    )
+    download.add_argument(
+        "--language", help="with --list, filter by language (e.g. 'it' or 'it_IT')"
+    )
+    download.add_argument(
+        "--models-dir", help="destination directory (default: the piper models_dir from config)"
+    )
+    download.add_argument(
+        "--force", action="store_true", help="re-download even if the files already exist"
+    )
+    download.set_defaults(handler=cmd_download)
 
     init_config = subparsers.add_parser(
         "init-config", help="write an annotated config file with the defaults"
@@ -241,6 +265,75 @@ def cmd_providers(args: argparse.Namespace) -> int:
         state = "available" if provider["available"] else f"unavailable ({provider['reason']})"
         print(f"{marker} {provider['name']:<10} {state}")
     return 0
+
+
+def cmd_download(args: argparse.Namespace) -> int:
+    catalog = VoiceCatalog()
+    if args.list_voices:
+        return _list_voices(catalog, args.language)
+    if not args.voice:
+        print(
+            "error: give a voice id to download, or use --list to browse the catalog",
+            file=sys.stderr,
+        )
+        return 2
+
+    models_dir = _resolve_models_dir(args.models_dir)
+    result = catalog.download(args.voice, models_dir, force=args.force, progress=_make_progress())
+    if not sys.stderr.isatty():
+        pass  # no in-place progress line to close
+    elif result.downloaded:
+        print(file=sys.stderr)  # end the progress line
+
+    if result.skipped:
+        print(f"{result.voice_id} already present in {result.models_dir} (use --force to refetch)")
+    else:
+        print(f"downloaded {result.voice_id} to {result.models_dir}")
+    print(f'try it: tts-daemon speak "Hello" --voice {result.voice_id}')
+    return 0
+
+
+def _list_voices(catalog: VoiceCatalog, language: str | None) -> int:
+    voices = catalog.list(language)
+    if not voices:
+        suffix = f" for language {language!r}" if language else ""
+        print(f"no voices found{suffix}")
+        return 0
+    width = max(len(voice.id) for voice in voices)
+    for voice in voices:
+        language_label = voice.language or ""
+        quality = voice.quality or ""
+        print(f"{voice.id:<{width}}  {language_label:<7} {quality:<7} {voice.size_mb:6.1f} MB")
+    return 0
+
+
+def _resolve_models_dir(explicit: str | None) -> Path:
+    """Where to put voices: --models-dir, else the piper models_dir, else the default."""
+    if explicit:
+        return Path(explicit).expanduser()
+    from tts_daemon.providers.piper import default_models_dir
+
+    try:
+        from tts_daemon.config import load_config
+
+        settings = load_config().provider_settings("piper")
+    except ConfigError:
+        return default_models_dir()
+    configured = settings.get("models_dir")
+    return Path(configured).expanduser() if configured else default_models_dir()
+
+
+def _make_progress():
+    """A terminal progress printer, or None when stderr is not a TTY (tests, pipes)."""
+    if not sys.stderr.isatty():
+        return None
+
+    def progress(name: str, done: int, total: int) -> None:
+        pct = int(done * 100 / total) if total else 0
+        mib = done / (1024 * 1024)
+        print(f"\r  {name}: {pct:3d}% ({mib:.1f} MiB)", end="", file=sys.stderr, flush=True)
+
+    return progress
 
 
 def cmd_init_config(args: argparse.Namespace) -> int:
