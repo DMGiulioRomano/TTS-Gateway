@@ -48,6 +48,32 @@ class SynthesizeRequest(BaseModel):
     options: dict[str, Any] = Field(default_factory=dict)
 
 
+class OpenAISpeechRequest(BaseModel):
+    """Body of ``POST /v1/audio/speech`` (OpenAI ``audio.speech.create`` schema).
+
+    Unknown fields (e.g. ``instructions``) are ignored so real OpenAI clients
+    work unchanged; only ``input`` is required.
+    """
+
+    model_config = ConfigDict(extra="ignore")
+
+    input: str = Field(description="Text to synthesize.", min_length=1)
+    model: str = Field(
+        default="",
+        description="A registered provider name is honored; 'tts-1'/'tts-1-hd'/"
+        "unknown fall back to the gateway default provider.",
+    )
+    voice: str = Field(
+        default="",
+        description="OpenAI voice name (mapped via openai_compat.voice_aliases) "
+        "or a real provider voice id; empty uses the default voice.",
+    )
+    response_format: str | None = Field(
+        default=None, description="Only 'wav' is supported for now; others return 422."
+    )
+    speed: float = Field(default=1.0, ge=0.25, le=4.0, description="Rate multiplier (0.25-4.0).")
+
+
 class UtteranceModel(BaseModel):
     """Snapshot of an utterance's state."""
 

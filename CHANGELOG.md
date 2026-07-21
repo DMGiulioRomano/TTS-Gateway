@@ -8,6 +8,12 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **OpenAI-compatible endpoint** `POST /v1/audio/speech` (#10): a drop-in for
+  OpenAI's speech API — point any OpenAI TTS client's `base_url` at the gateway
+  for local voices. Maps `model`/`voice`/`speed`, honors a registered provider
+  name as `model`, resolves OpenAI voice names via an `openai_compat.voice_aliases`
+  config section, returns WAV (other `response_format`s → 422). Example in
+  `examples/openai_compat.py`.
 - **On-disk synthesis cache** (#13): repeated phrases replay from a
   content-addressed cache (`$XDG_CACHE_HOME/tts-daemon`) instead of being
   re-synthesized. Configurable `cache: {enabled, max_mb}` with size-based LRU

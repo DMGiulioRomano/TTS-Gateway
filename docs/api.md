@@ -193,6 +193,32 @@ Delivery notes: each event's `data` is a snapshot taken at publish time and
 is authoritative; cross-event *ordering* is best-effort. Slow consumers have
 oldest events dropped rather than stalling playback (buffer: 256 events).
 
+## `POST /v1/audio/speech` (OpenAI-compatible)
+
+A drop-in for OpenAI's [`audio.speech`](https://platform.openai.com/docs/api-reference/audio/createSpeech)
+endpoint: any client that speaks that API gets local, private voices by pointing
+its `base_url` at the gateway.
+
+```python
+from openai import OpenAI
+client = OpenAI(base_url="http://127.0.0.1:5111/v1", api_key="unused")
+client.audio.speech.create(model="tts-1", input="Hello", voice="alloy")  # → local audio
+```
+
+Request body (OpenAI schema; unknown fields such as `instructions` are ignored):
+
+| Field             | Maps to                                                              |
+| ----------------- | -------------------------------------------------------------------- |
+| `input`           | text to speak (required)                                             |
+| `model`           | a registered provider name is honored (`"piper"`); `tts-1`/`tts-1-hd`/unknown use the default provider |
+| `voice`           | mapped via `openai_compat.voice_aliases`; an OpenAI voice name (`alloy`, `nova`, …) with no alias falls back to the default voice; any other value is passed through as a provider voice id; empty uses the default voice |
+| `speed`           | rate multiplier, `0.25`–`4.0`                                        |
+| `response_format` | `wav` only for now; anything else returns **422** (mp3 planned)      |
+
+The response is raw audio bytes (`audio/wav`). An `Authorization` header is
+accepted and ignored until bearer-token auth is enabled. See
+[examples/openai_compat.py](../examples/openai_compat.py).
+
 ## `GET /v1/events` (Server-Sent Events)
 
 The same event stream as the WebSocket, over SSE — native `EventSource` in

@@ -15,7 +15,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse
 
 from tts_daemon import __version__
-from tts_daemon.api import http, websocket
+from tts_daemon.api import http, openai_compat, websocket
 from tts_daemon.api.schemas import HealthResponse
 from tts_daemon.config import GatewayConfig, load_config
 from tts_daemon.core.errors import (
@@ -98,6 +98,7 @@ def create_app(config: GatewayConfig | None = None) -> FastAPI:
         return JSONResponse(status_code=status_code_for(exc), content={"detail": str(exc)})
 
     app.include_router(http.router, prefix="/v1")
+    app.include_router(openai_compat.router, prefix="/v1")
     app.include_router(websocket.router)
 
     @app.get("/health", response_model=HealthResponse, tags=["meta"])
@@ -129,7 +130,8 @@ _INDEX_HTML = f"""\
   -H 'content-type: application/json' \\
   -d '{{"text": "Hello from the gateway"}}'</code></pre>
 <p>Endpoints: <code>POST /v1/speak</code>, <code>POST /v1/stop</code>,
-<code>POST /v1/synthesize</code>, <code>GET /v1/status</code>,
+<code>POST /v1/synthesize</code>, <code>POST /v1/audio/speech</code>,
+<code>GET /v1/status</code>,
 <code>GET /v1/voices</code>, <code>GET /v1/providers</code>,
 <code>GET /v1/events</code>, <code>WS /v1/ws</code>,
 <code>GET /health</code></p>

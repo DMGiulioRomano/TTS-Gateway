@@ -32,6 +32,11 @@ cache:
                          # (location: $XDG_CACHE_HOME/tts-daemon, i.e. ~/.cache/tts-daemon)
                          # bypass a single request with options: {"no_cache": true}
 
+openai_compat:           # POST /v1/audio/speech (drop-in for OpenAI TTS clients)
+  voice_aliases: {}      # map OpenAI voice names to real voices, e.g.
+                         #   {alloy: en_US-lessac-medium, nova: it_IT-paola-medium}
+                         # unmapped OpenAI names fall back to the default voice
+
 logging:
   level: INFO
 

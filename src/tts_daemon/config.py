@@ -84,6 +84,14 @@ class CacheConfig(_StrictModel):
     max_mb: int = Field(default=200, ge=1)
 
 
+class OpenAICompatConfig(_StrictModel):
+    """Settings for the OpenAI-compatible ``POST /v1/audio/speech`` endpoint."""
+
+    # Maps OpenAI voice names (alloy, nova, ...) to real provider voice ids.
+    # Unmapped OpenAI voice names fall back to the gateway's default voice.
+    voice_aliases: dict[str, str] = Field(default_factory=dict)
+
+
 class LoggingConfig(_StrictModel):
     level: str = "INFO"
 
@@ -95,6 +103,7 @@ class GatewayConfig(_StrictModel):
     speech: SpeechConfig = Field(default_factory=SpeechConfig)
     playback: PlaybackConfig = Field(default_factory=PlaybackConfig)
     cache: CacheConfig = Field(default_factory=CacheConfig)
+    openai_compat: OpenAICompatConfig = Field(default_factory=OpenAICompatConfig)
     logging: LoggingConfig = Field(default_factory=LoggingConfig)
     # Free-form per-provider settings; each provider validates its own section.
     providers: dict[str, dict[str, Any]] = Field(default_factory=dict)
@@ -248,6 +257,11 @@ cache:
   max_mb: 200            # size budget; least-recently-used clips are evicted past it
                          # (location: $XDG_CACHE_HOME/tts-daemon, i.e. ~/.cache/tts-daemon)
                          # bypass a single request with options: {"no_cache": true}
+
+openai_compat:           # POST /v1/audio/speech (drop-in for OpenAI TTS clients)
+  voice_aliases: {}      # map OpenAI voice names to real voices, e.g.
+                         #   {alloy: en_US-lessac-medium, nova: it_IT-paola-medium}
+                         # unmapped OpenAI names fall back to the default voice
 
 logging:
   level: INFO
