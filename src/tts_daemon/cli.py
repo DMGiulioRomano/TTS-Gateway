@@ -1,7 +1,7 @@
-"""The ``tts-gateway`` command line interface.
+"""The ``tts-daemon`` command line interface.
 
 ``serve`` runs the server; every other subcommand is a thin HTTP client for
-a running gateway (see :mod:`tts_gateway.client`), so the CLI doubles as a
+a running gateway (see :mod:`tts_daemon.client`), so the CLI doubles as a
 reference for the REST API.
 """
 
@@ -13,9 +13,9 @@ import logging
 import sys
 from pathlib import Path
 
-from tts_gateway.client import GatewayClient, GatewayClientError
-from tts_gateway.core.errors import ConfigError
-from tts_gateway.defaults import DEFAULT_BASE_URL
+from tts_daemon.client import GatewayClient, GatewayClientError
+from tts_daemon.core.errors import ConfigError
+from tts_daemon.defaults import DEFAULT_BASE_URL
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -32,10 +32,10 @@ def main(argv: list[str] | None = None) -> int:
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        prog="tts-gateway",
+        prog="tts-daemon",
         description="Local text-to-speech gateway: speak text via interchangeable TTS providers.",
     )
-    from tts_gateway import __version__
+    from tts_daemon import __version__
 
     parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -93,7 +93,7 @@ def build_parser() -> argparse.ArgumentParser:
         "init-config", help="write an annotated config file with the defaults"
     )
     init_config.add_argument(
-        "--path", metavar="FILE", help="destination (default: ~/.config/tts-gateway/config.yaml)"
+        "--path", metavar="FILE", help="destination (default: ~/.config/tts-daemon/config.yaml)"
     )
     init_config.add_argument("--force", action="store_true", help="overwrite an existing file")
     init_config.set_defaults(handler=cmd_init_config)
@@ -117,8 +117,8 @@ def cmd_serve(args: argparse.Namespace) -> int:
     # the client subcommands, which keeps them snappy.
     import uvicorn
 
-    from tts_gateway.api.app import create_app
-    from tts_gateway.config import load_config
+    from tts_daemon.api.app import create_app
+    from tts_daemon.config import load_config
 
     config = load_config(args.config)
     server_overrides = {
@@ -238,7 +238,7 @@ def cmd_providers(args: argparse.Namespace) -> int:
 
 
 def cmd_init_config(args: argparse.Namespace) -> int:
-    from tts_gateway.config import EXAMPLE_CONFIG, default_config_path
+    from tts_daemon.config import EXAMPLE_CONFIG, default_config_path
 
     path = Path(args.path).expanduser() if args.path else default_config_path()
     if path.exists() and not args.force:

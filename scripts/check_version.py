@@ -4,7 +4,7 @@
 Usage: scripts/check_version.py [expected-version]
 
 Compares the ``[project] version`` in pyproject.toml with
-``tts_gateway.__version__`` (read statically, no import needed), and — when
+``tts_daemon.__version__`` (read statically, no import needed), and — when
 an expected version is given (e.g. the git tag on a release) — checks both
 against it. Exits non-zero on any mismatch.
 """
@@ -23,17 +23,17 @@ def main(argv: list[str]) -> int:
     pyproject = tomllib.loads((root / "pyproject.toml").read_text(encoding="utf-8"))
     project_version = pyproject["project"]["version"]
 
-    init_text = (root / "src" / "tts_gateway" / "__init__.py").read_text(encoding="utf-8")
+    init_text = (root / "src" / "tts_daemon" / "__init__.py").read_text(encoding="utf-8")
     match = re.search(r'^__version__ = "([^"]+)"$', init_text, re.MULTILINE)
     if match is None:
-        print("error: __version__ not found in src/tts_gateway/__init__.py", file=sys.stderr)
+        print("error: __version__ not found in src/tts_daemon/__init__.py", file=sys.stderr)
         return 1
     init_version = match.group(1)
 
     if project_version != init_version:
         print(
             f"error: version mismatch: pyproject.toml has {project_version}, "
-            f"tts_gateway.__version__ is {init_version}",
+            f"tts_daemon.__version__ is {init_version}",
             file=sys.stderr,
         )
         return 1

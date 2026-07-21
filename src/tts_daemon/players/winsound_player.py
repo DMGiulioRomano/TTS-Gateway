@@ -9,9 +9,9 @@ from __future__ import annotations
 import threading
 import winsound
 
-from tts_gateway.core.errors import PlaybackError
-from tts_gateway.core.interfaces import AudioPlayer
-from tts_gateway.core.models import AudioClip, AudioFormat
+from tts_daemon.core.errors import PlaybackError
+from tts_daemon.core.interfaces import AudioPlayer
+from tts_daemon.core.models import AudioClip, AudioFormat
 
 
 class WinsoundPlayer(AudioPlayer):

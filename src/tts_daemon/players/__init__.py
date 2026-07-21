@@ -4,11 +4,11 @@ from __future__ import annotations
 
 import sys
 
-from tts_gateway.config import PlaybackConfig
-from tts_gateway.core.errors import ConfigError
-from tts_gateway.core.interfaces import AudioPlayer
-from tts_gateway.players.command import CommandPlayer
-from tts_gateway.players.null import NullPlayer
+from tts_daemon.config import PlaybackConfig
+from tts_daemon.core.errors import ConfigError
+from tts_daemon.core.interfaces import AudioPlayer
+from tts_daemon.players.command import CommandPlayer
+from tts_daemon.players.null import NullPlayer
 
 __all__ = ["CommandPlayer", "NullPlayer", "create_player"]
 
@@ -36,7 +36,7 @@ def create_player(config: PlaybackConfig) -> AudioPlayer:
     if config.command:
         return CommandPlayer(config.command)
     if not CommandPlayer.detect_candidates() and sys.platform == "win32":
-        from tts_gateway.players.winsound_player import WinsoundPlayer
+        from tts_daemon.players.winsound_player import WinsoundPlayer
 
         return WinsoundPlayer()
     return CommandPlayer()

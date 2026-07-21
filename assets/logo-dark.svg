@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 140" role="img" aria-label="tts-gateway">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 140" role="img" aria-label="tts-daemon">
   <!-- Icon: terminal prompt emitting sound waves -->
   <rect x="10" y="14" width="112" height="112" rx="26" fill="#818cf8"/>
   <path d="M36 50 L58 70 L36 90" fill="none" stroke="#0b1021" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>

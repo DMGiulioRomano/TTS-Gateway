@@ -10,12 +10,12 @@ from pathlib import Path
 import pytest
 
 from tests.conftest import make_clip
-from tts_gateway.config import PlaybackConfig
-from tts_gateway.core.errors import ConfigError, PlaybackError
-from tts_gateway.core.models import AudioClip, AudioFormat
-from tts_gateway.players import create_player
-from tts_gateway.players.command import CommandPlayer
-from tts_gateway.players.null import NullPlayer
+from tts_daemon.config import PlaybackConfig
+from tts_daemon.core.errors import ConfigError, PlaybackError
+from tts_daemon.core.models import AudioClip, AudioFormat
+from tts_daemon.players import create_player
+from tts_daemon.players.command import CommandPlayer
+from tts_daemon.players.null import NullPlayer
 
 pytestmark = pytest.mark.skipif(sys.platform == "win32", reason="tests drive POSIX commands")
 
@@ -92,7 +92,7 @@ class TestCommandPlayerStop:
 
 class TestDetection:
     def test_detects_only_installed_commands(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        import tts_gateway.players.command as command_module
+        import tts_daemon.players.command as command_module
 
         monkeypatch.setattr(
             command_module.shutil, "which", lambda name: "/usr/bin/x" if name == "ffplay" else None
@@ -103,7 +103,7 @@ class TestDetection:
     def test_format_constraints_route_to_capable_command(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        import tts_gateway.players.command as command_module
+        import tts_daemon.players.command as command_module
 
         installed = {"aplay": "/usr/bin/aplay", "mpv": "/usr/bin/mpv"}
         monkeypatch.setattr(command_module.shutil, "which", installed.get)
@@ -112,7 +112,7 @@ class TestDetection:
         assert player._argv_for(AudioFormat.MP3)[0] == "mpv"  # aplay cannot decode mp3
 
     def test_no_commands_found(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        import tts_gateway.players.command as command_module
+        import tts_daemon.players.command as command_module
 
         monkeypatch.setattr(command_module.shutil, "which", lambda name: None)
         player = CommandPlayer()

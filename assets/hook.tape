@@ -5,7 +5,7 @@
 #
 #     vhs assets/hook.tape
 #
-# Requirements: vhs on PATH, tts-gateway installed, the hook script at
+# Requirements: vhs on PATH, tts-daemon installed, the hook script at
 # integrations/claude-code/claude_code_speak.py.
 
 Output assets/hook.gif
@@ -18,7 +18,7 @@ Set Padding 16
 Set TypingSpeed 40ms
 
 Hide
-Type "tts-gateway serve > /tmp/tts-gateway-hook.log 2>&1 &"
+Type "tts-daemon serve > /tmp/tts-daemon-hook.log 2>&1 &"
 Enter
 Sleep 2s
 Type "clear"
@@ -37,7 +37,7 @@ Type `echo "All 188 tests pass. The **gateway** is ready." | claude_code_speak.p
 Enter
 Sleep 1.5s
 
-Type "tts-gateway status"
+Type "tts-daemon status"
 Enter
 Sleep 3s
 

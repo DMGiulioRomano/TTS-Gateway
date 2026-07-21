@@ -32,7 +32,7 @@ def hook():
 
 class TestPrepare:
     def test_strips_markdown(self, hook, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.delenv("TTS_GATEWAY_SPEAK_MAX_CHARS", raising=False)
+        monkeypatch.delenv("TTS_DAEMON_SPEAK_MAX_CHARS", raising=False)
         text = (
             "## Result\n\n"
             "The fix is in `main.py`, see [the docs](https://example.com).\n\n"
@@ -50,13 +50,13 @@ class TestPrepare:
         assert "main.py" in spoken
 
     def test_truncates_to_limit(self, hook, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.setenv("TTS_GATEWAY_SPEAK_MAX_CHARS", "50")
+        monkeypatch.setenv("TTS_DAEMON_SPEAK_MAX_CHARS", "50")
         spoken = hook.prepare("word " * 100)
         assert len(spoken) < 80
         assert spoken.endswith("truncated.")
 
     def test_zero_limit_disables_truncation(self, hook, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.setenv("TTS_GATEWAY_SPEAK_MAX_CHARS", "0")
+        monkeypatch.setenv("TTS_DAEMON_SPEAK_MAX_CHARS", "0")
         long_text = "word " * 200
         assert "truncated" not in hook.prepare(long_text)
 

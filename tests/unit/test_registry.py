@@ -5,11 +5,11 @@ from __future__ import annotations
 import pytest
 
 from tests.conftest import make_clip, make_config
-from tts_gateway.core.errors import UnknownProviderError
-from tts_gateway.core.interfaces import TTSProvider
-from tts_gateway.core.models import AudioClip, SynthesisRequest, Voice
-from tts_gateway.providers import registry as registry_module
-from tts_gateway.providers.registry import ProviderRegistry, create_default_registry
+from tts_daemon.core.errors import UnknownProviderError
+from tts_daemon.core.interfaces import TTSProvider
+from tts_daemon.core.models import AudioClip, SynthesisRequest, Voice
+from tts_daemon.providers import registry as registry_module
+from tts_daemon.providers.registry import ProviderRegistry, create_default_registry
 
 
 class EchoProvider(TTSProvider):

@@ -8,4 +8,4 @@ COPY . .
 RUN pip install --no-cache-dir .
 
 EXPOSE 5111
-CMD ["tts-gateway", "serve", "--host", "0.0.0.0", "--port", "5111"]
+CMD ["tts-daemon", "serve", "--host", "0.0.0.0", "--port", "5111"]

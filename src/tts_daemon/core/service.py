@@ -10,13 +10,13 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from tts_gateway.config import GatewayConfig
-from tts_gateway.core.errors import ProviderUnavailableError
-from tts_gateway.core.events import EventBus
-from tts_gateway.core.interfaces import AudioPlayer, TTSProvider
-from tts_gateway.core.models import AudioClip, SynthesisRequest, Utterance
-from tts_gateway.core.queue import PlaybackQueue
-from tts_gateway.providers.registry import ProviderRegistry
+from tts_daemon.config import GatewayConfig
+from tts_daemon.core.errors import ProviderUnavailableError
+from tts_daemon.core.events import EventBus
+from tts_daemon.core.interfaces import AudioPlayer, TTSProvider
+from tts_daemon.core.models import AudioClip, SynthesisRequest, Utterance
+from tts_daemon.core.queue import PlaybackQueue
+from tts_daemon.providers.registry import ProviderRegistry
 
 logger = logging.getLogger(__name__)
 

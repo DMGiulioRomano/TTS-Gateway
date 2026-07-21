@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import pytest
 
-from tts_gateway.core.errors import SynthesisError
-from tts_gateway.core.models import AudioFormat, SynthesisRequest
-from tts_gateway.providers.tone import MAX_BEEPS, ToneProvider
+from tts_daemon.core.errors import SynthesisError
+from tts_daemon.core.models import AudioFormat, SynthesisRequest
+from tts_daemon.providers.tone import MAX_BEEPS, ToneProvider
 
 
 @pytest.fixture()

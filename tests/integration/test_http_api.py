@@ -8,7 +8,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from tests.conftest import BlockingProvider, make_config
-from tts_gateway.api.app import create_app
+from tts_daemon.api.app import create_app
 
 
 @pytest.fixture()

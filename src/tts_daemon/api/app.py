@@ -14,11 +14,11 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse
 
-from tts_gateway import __version__
-from tts_gateway.api import http, websocket
-from tts_gateway.api.schemas import HealthResponse
-from tts_gateway.config import GatewayConfig, load_config
-from tts_gateway.core.errors import (
+from tts_daemon import __version__
+from tts_daemon.api import http, websocket
+from tts_daemon.api.schemas import HealthResponse
+from tts_daemon.config import GatewayConfig, load_config
+from tts_daemon.core.errors import (
     ConfigError,
     GatewayError,
     PlaybackError,
@@ -27,10 +27,10 @@ from tts_gateway.core.errors import (
     SynthesisError,
     UnknownProviderError,
 )
-from tts_gateway.core.events import EventBus
-from tts_gateway.core.service import SpeechService
-from tts_gateway.players import create_player
-from tts_gateway.providers.registry import create_default_registry
+from tts_daemon.core.events import EventBus
+from tts_daemon.core.service import SpeechService
+from tts_daemon.players import create_player
+from tts_daemon.providers.registry import create_default_registry
 
 #: One place that decides how each domain error surfaces over HTTP.
 ERROR_STATUS_CODES: tuple[tuple[type[Exception], int], ...] = (
@@ -69,7 +69,7 @@ def create_app(config: GatewayConfig | None = None) -> FastAPI:
             service.close()
 
     app = FastAPI(
-        title="tts-gateway",
+        title="tts-daemon",
         version=__version__,
         description=(
             "Local text-to-speech gateway: send text over HTTP or WebSocket, "
@@ -114,7 +114,7 @@ def create_app(config: GatewayConfig | None = None) -> FastAPI:
 _INDEX_HTML = f"""\
 <!doctype html>
 <html lang="en">
-<head><meta charset="utf-8"><title>tts-gateway</title>
+<head><meta charset="utf-8"><title>tts-daemon</title>
 <style>
   body {{ font: 16px/1.6 system-ui, sans-serif; max-width: 42rem;
          margin: 3rem auto; padding: 0 1rem; }}
@@ -122,7 +122,7 @@ _INDEX_HTML = f"""\
 </style>
 </head>
 <body>
-<h1>tts-gateway <small>v{__version__}</small></h1>
+<h1>tts-daemon <small>v{__version__}</small></h1>
 <p>A local text-to-speech gateway. Interactive API docs: <a href="/docs">/docs</a></p>
 <p>Try it:</p>
 <pre><code>curl -X POST localhost:5111/v1/speak \\

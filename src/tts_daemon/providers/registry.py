@@ -4,12 +4,12 @@ The registry is the single place that knows which providers exist. Everything
 else (service, API, CLI) asks it by name, which is what keeps the server
 completely decoupled from concrete engines.
 
-Third-party providers are discovered from the ``tts_gateway.providers`` entry
-point group, so installing a package such as ``tts-gateway-kokoro`` that
+Third-party providers are discovered from the ``tts_daemon.providers`` entry
+point group, so installing a package such as ``tts-daemon-kokoro`` that
 declares::
 
-    [project.entry-points."tts_gateway.providers"]
-    kokoro = "tts_gateway_kokoro:KokoroProvider"
+    [project.entry-points."tts_daemon.providers"]
+    kokoro = "tts_daemon_kokoro:KokoroProvider"
 
 makes ``kokoro`` usable in requests and configuration with no gateway change.
 """
@@ -19,13 +19,13 @@ from __future__ import annotations
 import logging
 from importlib.metadata import entry_points
 
-from tts_gateway.config import GatewayConfig
-from tts_gateway.core.errors import UnknownProviderError
-from tts_gateway.core.interfaces import TTSProvider
+from tts_daemon.config import GatewayConfig
+from tts_daemon.core.errors import UnknownProviderError
+from tts_daemon.core.interfaces import TTSProvider
 
 logger = logging.getLogger(__name__)
 
-ENTRY_POINT_GROUP = "tts_gateway.providers"
+ENTRY_POINT_GROUP = "tts_daemon.providers"
 
 
 class ProviderRegistry:
@@ -102,8 +102,8 @@ def create_default_registry(config: GatewayConfig) -> ProviderRegistry:
     """Registry with the built-in providers plus any entry-point plugins."""
     # Imported here so that the registry module itself stays import-light and
     # a syntax error in one provider cannot break registry imports elsewhere.
-    from tts_gateway.providers.piper import PiperProvider
-    from tts_gateway.providers.tone import ToneProvider
+    from tts_daemon.providers.piper import PiperProvider
+    from tts_daemon.providers.tone import ToneProvider
 
     registry = ProviderRegistry(config)
     registry.register(PiperProvider)

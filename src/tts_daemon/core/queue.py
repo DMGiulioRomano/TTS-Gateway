@@ -27,10 +27,10 @@ from collections import deque
 from collections.abc import Callable
 from typing import Any
 
-from tts_gateway.core.errors import PlaybackError, QueueFullError, SynthesisError
-from tts_gateway.core.events import EventBus
-from tts_gateway.core.interfaces import AudioPlayer
-from tts_gateway.core.models import AudioClip, Utterance, UtteranceState
+from tts_daemon.core.errors import PlaybackError, QueueFullError, SynthesisError
+from tts_daemon.core.events import EventBus
+from tts_daemon.core.interfaces import AudioPlayer
+from tts_daemon.core.models import AudioClip, Utterance, UtteranceState
 
 logger = logging.getLogger(__name__)
 
@@ -56,7 +56,7 @@ class PlaybackQueue:
         self._history: deque[dict[str, Any]] = deque(maxlen=history_size)
         self._current: Utterance | None = None
         self._closed = False
-        self._worker = threading.Thread(target=self._run, name="tts-gateway-playback", daemon=True)
+        self._worker = threading.Thread(target=self._run, name="tts-daemon-playback", daemon=True)
         self._worker.start()
 
     # ------------------------------------------------------------------ api

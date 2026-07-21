@@ -6,15 +6,15 @@ precedence last:
 
 1. **Built-in defaults**
 2. **YAML file** — the first of:
-   - a path passed explicitly (`tts-gateway serve --config path.yaml`)
-   - `$TTS_GATEWAY_CONFIG`
-   - `~/.config/tts-gateway/config.yaml` (respects `$XDG_CONFIG_HOME`)
-3. **Environment variables** — `TTS_GATEWAY__SECTION__KEY=value`
+   - a path passed explicitly (`tts-daemon serve --config path.yaml`)
+   - `$TTS_DAEMON_CONFIG`
+   - `~/.config/tts-daemon/config.yaml` (respects `$XDG_CONFIG_HOME`)
+3. **Environment variables** — `TTS_DAEMON__SECTION__KEY=value`
 
 Generate an annotated starting point at the default location:
 
 ```sh
-tts-gateway init-config
+tts-daemon init-config
 ```
 
 Unknown keys are rejected at startup with the offending location — typos
@@ -26,11 +26,11 @@ Double underscores separate path segments (so key names may contain single
 underscores); values are parsed as YAML scalars:
 
 ```sh
-TTS_GATEWAY__SERVER__PORT=6000
-TTS_GATEWAY__SPEECH__DEFAULT_PROVIDER=piper
-TTS_GATEWAY__SPEECH__PROVIDER_PRIORITY='[piper, tone]'
-TTS_GATEWAY__PROVIDERS__PIPER__MODELS_DIR=/opt/voices
-TTS_GATEWAY__PLAYBACK__BACKEND=null
+TTS_DAEMON__SERVER__PORT=6000
+TTS_DAEMON__SPEECH__DEFAULT_PROVIDER=piper
+TTS_DAEMON__SPEECH__PROVIDER_PRIORITY='[piper, tone]'
+TTS_DAEMON__PROVIDERS__PIPER__MODELS_DIR=/opt/voices
+TTS_DAEMON__PLAYBACK__BACKEND=null
 ```
 
 ## Reference
@@ -71,7 +71,7 @@ TTS_GATEWAY__PLAYBACK__BACKEND=null
 | Key               | Default                              | Meaning                                             |
 | ----------------- | ------------------------------------ | --------------------------------------------------- |
 | `binary`          | `piper`                              | Executable name or path.                            |
-| `models_dir`      | `~/.local/share/tts-gateway/piper`   | Directory scanned for `*.onnx` voices.              |
+| `models_dir`      | `~/.local/share/tts-daemon/piper`   | Directory scanned for `*.onnx` voices.              |
 | `default_voice`   | first model found                    | Model stem (`en_US-lessac-medium`) or `.onnx` path. |
 | `speed_flag`      | `--length_scale`                     | CLI flag for the rate parameter (the Python CLI spells it `--length-scale`). |
 | `timeout_seconds` | `120`                                | Wall-time limit per synthesis.                      |
@@ -109,7 +109,7 @@ logging:
 
 providers:
   piper:
-    models_dir: ~/.local/share/tts-gateway/piper
+    models_dir: ~/.local/share/tts-daemon/piper
     default_voice: en_US-lessac-medium
     extra_args: ["--sentence_silence", "0.3"]
 ```

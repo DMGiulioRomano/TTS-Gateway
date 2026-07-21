@@ -167,7 +167,7 @@ headless deployments and tests silent.
 
 ## Configuration
 
-Layered: defaults ← YAML file ← `TTS_GATEWAY__SECTION__KEY` env vars, all
+Layered: defaults ← YAML file ← `TTS_DAEMON__SECTION__KEY` env vars, all
 validated by strict pydantic models (unknown keys are startup errors —
 typos fail loudly). Provider sections are free-form mappings passed through
 to the engine, so a provider can grow settings without core changes.

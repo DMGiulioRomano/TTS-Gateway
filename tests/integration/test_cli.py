@@ -6,9 +6,9 @@ from pathlib import Path
 
 import pytest
 
-from tts_gateway.cli import build_parser, main
-from tts_gateway.client import GatewayClient, GatewayClientError
-from tts_gateway.config import EXAMPLE_CONFIG
+from tts_daemon.cli import build_parser, main
+from tts_daemon.client import GatewayClient, GatewayClientError
+from tts_daemon.config import EXAMPLE_CONFIG
 
 
 class TestParser:
@@ -51,7 +51,7 @@ class TestInitConfig:
 class TestClientErrors:
     def test_unreachable_server_has_actionable_message(self) -> None:
         client = GatewayClient("http://127.0.0.1:1", timeout=1)
-        with pytest.raises(GatewayClientError, match="tts-gateway serve"):
+        with pytest.raises(GatewayClientError, match="tts-daemon serve"):
             client.health()
 
     def test_cli_surfaces_client_error_as_exit_1(self, capsys: pytest.CaptureFixture) -> None:

@@ -1,7 +1,7 @@
 """Ports of the gateway: the interfaces that adapters implement.
 
 To add a new TTS engine you implement :class:`TTSProvider` and register it
-(see ``tts_gateway.providers.registry``); to add a new audio output you
+(see ``tts_daemon.providers.registry``); to add a new audio output you
 implement :class:`AudioPlayer`. Nothing else in the gateway needs to change.
 
 Both interfaces are deliberately synchronous. Providers are typically
@@ -16,7 +16,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import ClassVar
 
-from tts_gateway.core.models import AudioClip, Availability, SynthesisRequest, Voice
+from tts_daemon.core.models import AudioClip, Availability, SynthesisRequest, Voice
 
 
 class TTSProvider(ABC):
@@ -39,7 +39,7 @@ class TTSProvider(ABC):
     def synthesize(self, request: SynthesisRequest) -> AudioClip:
         """Convert ``request.text`` into audio.
 
-        Raise :class:`~tts_gateway.core.errors.SynthesisError` on failure;
+        Raise :class:`~tts_daemon.core.errors.SynthesisError` on failure;
         any other exception is treated as a bug in the provider.
         """
 
@@ -75,7 +75,7 @@ class AudioPlayer(ABC):
 
         Returns ``True`` if the clip played fully, ``False`` if it was
         interrupted by :meth:`stop`. Raises
-        :class:`~tts_gateway.core.errors.PlaybackError` when playback cannot
+        :class:`~tts_daemon.core.errors.PlaybackError` when playback cannot
         run at all (no output command, unsupported format...).
         """
 

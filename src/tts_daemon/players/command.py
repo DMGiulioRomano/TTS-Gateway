@@ -22,9 +22,9 @@ import threading
 from dataclasses import dataclass
 from pathlib import Path
 
-from tts_gateway.core.errors import PlaybackError
-from tts_gateway.core.interfaces import AudioPlayer
-from tts_gateway.core.models import AudioClip, AudioFormat, Availability
+from tts_daemon.core.errors import PlaybackError
+from tts_daemon.core.interfaces import AudioPlayer
+from tts_daemon.core.models import AudioClip, AudioFormat, Availability
 
 logger = logging.getLogger(__name__)
 
@@ -210,7 +210,7 @@ class CommandPlayer(AudioPlayer):
                 # delete=False so the path can be handed to another process
                 # (required on Windows, harmless elsewhere); removed in finally.
                 with tempfile.NamedTemporaryFile(
-                    prefix="tts-gateway-", suffix=clip.format.suffix, delete=False
+                    prefix="tts-daemon-", suffix=clip.format.suffix, delete=False
                 ) as handle:
                     handle.write(clip.data)
                     temp_path = Path(handle.name)

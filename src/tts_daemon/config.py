@@ -3,11 +3,11 @@
 Precedence (lowest to highest):
 
 1. Built-in defaults (every field has one; the gateway runs with no config).
-2. A YAML file: an explicit path, else ``$TTS_GATEWAY_CONFIG``, else
-   ``~/.config/tts-gateway/config.yaml`` (respecting ``$XDG_CONFIG_HOME``).
-3. Environment variables of the form ``TTS_GATEWAY__SECTION__KEY=value``,
-   e.g. ``TTS_GATEWAY__SERVER__PORT=6000`` or
-   ``TTS_GATEWAY__PROVIDERS__PIPER__MODELS_DIR=/opt/voices``. Path segments
+2. A YAML file: an explicit path, else ``$TTS_DAEMON_CONFIG``, else
+   ``~/.config/tts-daemon/config.yaml`` (respecting ``$XDG_CONFIG_HOME``).
+3. Environment variables of the form ``TTS_DAEMON__SECTION__KEY=value``,
+   e.g. ``TTS_DAEMON__SERVER__PORT=6000`` or
+   ``TTS_DAEMON__PROVIDERS__PIPER__MODELS_DIR=/opt/voices``. Path segments
    are separated by double underscores so key names may contain single
    underscores; values are parsed as YAML scalars (numbers, booleans, lists).
 """
@@ -22,11 +22,11 @@ from typing import Any, Literal
 import yaml
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
 
-from tts_gateway.core.errors import ConfigError
-from tts_gateway.defaults import DEFAULT_HOST, DEFAULT_PORT
+from tts_daemon.core.errors import ConfigError
+from tts_daemon.defaults import DEFAULT_HOST, DEFAULT_PORT
 
-ENV_PREFIX = "TTS_GATEWAY__"
-CONFIG_PATH_ENV = "TTS_GATEWAY_CONFIG"
+ENV_PREFIX = "TTS_DAEMON__"
+CONFIG_PATH_ENV = "TTS_DAEMON_CONFIG"
 
 
 class _StrictModel(BaseModel):
@@ -72,7 +72,7 @@ class PlaybackConfig(_StrictModel):
     @classmethod
     def _yaml_null_means_null_backend(cls, value: object) -> object:
         # YAML parses the bare word ``null`` as None (both in config files and
-        # in TTS_GATEWAY__* env values); for this field the user clearly meant
+        # in TTS_DAEMON__* env values); for this field the user clearly meant
         # the null backend.
         return "null" if value is None else value
 
@@ -97,11 +97,11 @@ class GatewayConfig(_StrictModel):
 
 
 def default_config_path(env: Mapping[str, str] | None = None) -> Path:
-    """``$XDG_CONFIG_HOME/tts-gateway/config.yaml`` (or the ~/.config fallback)."""
+    """``$XDG_CONFIG_HOME/tts-daemon/config.yaml`` (or the ~/.config fallback)."""
     environ = os.environ if env is None else env
     xdg = environ.get("XDG_CONFIG_HOME", "").strip()
     base = Path(xdg) if xdg else Path.home() / ".config"
-    return base / "tts-gateway" / "config.yaml"
+    return base / "tts-daemon" / "config.yaml"
 
 
 def _read_yaml_file(path: Path) -> dict[str, Any]:
@@ -132,7 +132,7 @@ def _deep_merge(base: dict[str, Any], override: Mapping[str, Any]) -> dict[str, 
 
 
 def _env_overrides(env: Mapping[str, str]) -> dict[str, Any]:
-    """Turn ``TTS_GATEWAY__A__B=v`` variables into a nested mapping."""
+    """Turn ``TTS_DAEMON__A__B=v`` variables into a nested mapping."""
     result: dict[str, Any] = {}
     for raw_key, raw_value in env.items():
         if not raw_key.startswith(ENV_PREFIX):
@@ -163,7 +163,7 @@ def load_config(
     """Build the effective configuration.
 
     ``path`` forces a specific YAML file (it must exist); otherwise the file
-    named by ``$TTS_GATEWAY_CONFIG`` is used (it must exist too, since the
+    named by ``$TTS_DAEMON_CONFIG`` is used (it must exist too, since the
     user asked for it), else the default location is used if present.
     ``env`` defaults to ``os.environ`` and is injectable for tests.
     """
@@ -204,15 +204,15 @@ def _format_validation_error(exc: ValidationError, file_path: Path | None) -> st
     return "\n".join(lines)
 
 
-#: Annotated template written by ``tts-gateway init-config`` and shipped as
+#: Annotated template written by ``tts-daemon init-config`` and shipped as
 #: ``config.example.yaml``. Keep in sync with the models above (tested).
 EXAMPLE_CONFIG = """\
-# tts-gateway configuration.
-# Default location: ~/.config/tts-gateway/config.yaml
+# tts-daemon configuration.
+# Default location: ~/.config/tts-daemon/config.yaml
 # Every key is optional; the values shown here are the built-in defaults
 # unless noted otherwise. Environment variables override this file, e.g.
-#   TTS_GATEWAY__SERVER__PORT=6000
-#   TTS_GATEWAY__PROVIDERS__PIPER__MODELS_DIR=/opt/voices
+#   TTS_DAEMON__SERVER__PORT=6000
+#   TTS_DAEMON__PROVIDERS__PIPER__MODELS_DIR=/opt/voices
 
 server:
   host: 127.0.0.1        # bind address; keep on localhost unless you trust the network
@@ -241,7 +241,7 @@ logging:
 providers:
   piper:
     binary: piper        # path to the piper executable
-    models_dir: null     # where *.onnx voices live; default: ~/.local/share/tts-gateway/piper
+    models_dir: null     # where *.onnx voices live; default: ~/.local/share/tts-daemon/piper
     default_voice: null  # model name (without .onnx) or full path; default: first model found
     extra_args: []       # appended verbatim to the piper command line
   tone: {}               # dependency-free beep provider; no settings

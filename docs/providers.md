@@ -6,12 +6,12 @@ write one class with two methods, you can add an engine.
 
 ## The contract
 
-Implement `tts_gateway.core.interfaces.TTSProvider`:
+Implement `tts_daemon.core.interfaces.TTSProvider`:
 
 ```python
-from tts_gateway.core.errors import SynthesisError
-from tts_gateway.core.interfaces import TTSProvider
-from tts_gateway.core.models import (
+from tts_daemon.core.errors import SynthesisError
+from tts_daemon.core.interfaces import TTSProvider
+from tts_daemon.core.models import (
     AudioClip, AudioFormat, Availability, SynthesisRequest, Voice,
 )
 
@@ -76,21 +76,21 @@ class MyEngineProvider(TTSProvider):
 Publish your provider as its own package and declare an entry point:
 
 ```toml
-# pyproject.toml of tts-gateway-myengine
-[project.entry-points."tts_gateway.providers"]
-myengine = "tts_gateway_myengine:MyEngineProvider"
+# pyproject.toml of tts-daemon-myengine
+[project.entry-points."tts_daemon.providers"]
+myengine = "tts_daemon_myengine:MyEngineProvider"
 ```
 
-`pip install tts-gateway-myengine` and restart: the gateway discovers it,
+`pip install tts-daemon-myengine` and restart: the gateway discovers it,
 `myengine` becomes valid in requests and config, and `providers.myengine`
 reaches your constructor. Built-in names win on collision, and a plugin that
 fails to import is logged and skipped — it can never take the server down.
 
 ### Option B — in-tree (contributing to the gateway)
 
-1. Add `src/tts_gateway/providers/myengine.py`.
+1. Add `src/tts_daemon/providers/myengine.py`.
 2. Register it in `create_default_registry`
-   (`src/tts_gateway/providers/registry.py`) and add the entry point to
+   (`src/tts_daemon/providers/registry.py`) and add the entry point to
    `pyproject.toml`.
 3. Consider adding it to the default `speech.provider_priority` in
    `config.py` only if it works with zero configuration on a typical
@@ -127,6 +127,6 @@ Checklist:
 Run the gateway with only your provider to try it end to end:
 
 ```sh
-TTS_GATEWAY__SPEECH__DEFAULT_PROVIDER=myengine tts-gateway serve
-tts-gateway speak "testing my engine" --provider myengine
+TTS_DAEMON__SPEECH__DEFAULT_PROVIDER=myengine tts-daemon serve
+tts-daemon speak "testing my engine" --provider myengine
 ```

@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 """Using the bundled GatewayClient from Python.
 
-Run a gateway first (``tts-gateway serve``), then::
+Run a gateway first (``tts-daemon serve``), then::
 
     python3 examples/python_client.py
 """
 
 from __future__ import annotations
 
-from tts_gateway.client import GatewayClient, GatewayClientError
+from tts_daemon.client import GatewayClient, GatewayClientError
 
 
 def main() -> int:

@@ -1,9 +1,9 @@
 // ==UserScript==
-// @name         TTS Gateway: Speak Selection + Auto-read
-// @namespace    https://github.com/DMGiulioRomano/TTS-Gateway
+// @name         TTS Daemon: Speak Selection + Auto-read
+// @namespace    https://github.com/DMGiulioRomano/TTS-Daemon
 // @version      0.2.0
-// @description  Read text aloud through a local tts-gateway. Alt+S speaks the selection (replacing current speech), Alt+Shift+S queues, Alt+X stops. Alt+A toggles auto-reading of new chat replies on the current site.
-// @author       TTS Gateway contributors
+// @description  Read text aloud through a local tts-daemon. Alt+S speaks the selection (replacing current speech), Alt+Shift+S queues, Alt+X stops. Alt+A toggles auto-reading of new chat replies on the current site.
+// @author       TTS Daemon contributors
 // @license      MIT
 // @match        *://*/*
 // @grant        GM_xmlhttpRequest
@@ -59,13 +59,13 @@
           } catch (ignored) {
             // non-JSON error body; keep the status text
           }
-          toast("tts-gateway: " + detail);
+          toast("tts-daemon: " + detail);
         } else if (onOk) {
           onOk(response);
         }
       },
-      onerror: () => toast("tts-gateway unreachable. Start it with: tts-gateway serve"),
-      ontimeout: () => toast("tts-gateway timed out"),
+      onerror: () => toast("tts-daemon unreachable. Start it with: tts-daemon serve"),
+      ontimeout: () => toast("tts-daemon timed out"),
     });
   }
 
@@ -254,7 +254,7 @@
     if (active && !indicator) {
       indicator = document.createElement("div");
       indicator.textContent = "🔊 auto";
-      indicator.title = "tts-gateway auto-read is on (click or Alt+A to stop)";
+      indicator.title = "tts-daemon auto-read is on (click or Alt+A to stop)";
       indicator.style.cssText = [
         "position:fixed",
         "left:16px",

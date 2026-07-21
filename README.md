@@ -1,23 +1,23 @@
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="assets/logo-dark.svg">
-    <img src="assets/logo.svg" alt="tts-gateway" width="440">
+    <img src="assets/logo.svg" alt="tts-daemon" width="440">
   </picture>
 </p>
 
 <p align="center"><strong>A local HTTP/WebSocket text-to-speech gateway with interchangeable engines.</strong></p>
 
 <p align="center">
-  <a href="https://github.com/DMGiulioRomano/TTS-Gateway/actions/workflows/ci.yml"><img src="https://github.com/DMGiulioRomano/TTS-Gateway/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://github.com/DMGiulioRomano/TTS-Daemon/actions/workflows/ci.yml"><img src="https://github.com/DMGiulioRomano/TTS-Daemon/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <a href="https://pypi.org/project/tts-daemon/"><img src="https://img.shields.io/pypi/v/tts-daemon" alt="PyPI"></a>
   <a href="https://pypi.org/project/tts-daemon/"><img src="https://img.shields.io/pypi/dm/tts-daemon" alt="PyPI downloads"></a>
   <img src="https://img.shields.io/badge/python-3.10%2B-blue" alt="Python 3.10+">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT"></a>
-  <a href="https://github.com/DMGiulioRomano/TTS-Gateway/discussions"><img src="https://img.shields.io/badge/GitHub-Discussions-2ea44f?logo=github" alt="GitHub Discussions"></a>
+  <a href="https://github.com/DMGiulioRomano/TTS-Daemon/discussions"><img src="https://img.shields.io/badge/GitHub-Discussions-2ea44f?logo=github" alt="GitHub Discussions"></a>
 </p>
 
 <p align="center">
-  <a href="https://dmgiulioromano.github.io/TTS-Gateway/samples/">🔊 Hear it</a> ·
+  <a href="https://dmgiulioromano.github.io/TTS-Daemon/samples/">🔊 Hear it</a> ·
   <a href="#install">Install</a> ·
   <a href="#the-api-in-30-seconds">API</a> ·
   <a href="#included-integrations">Integrations</a> ·
@@ -25,7 +25,7 @@
 </p>
 
 <p align="center">
-  <img src="assets/demo.gif" alt="tts-gateway demo: serve, speak, interrupt, status" width="720">
+  <img src="assets/demo.gif" alt="tts-daemon demo: serve, speak, interrupt, status" width="720">
 </p>
 
 Send text from anywhere — a browser, Claude Code, a shell script, an editor —
@@ -47,33 +47,30 @@ pip install tts-daemon        # or: pipx install tts-daemon (isolated, recommend
 **One-line script** (uses pipx when present, else `pip --user`):
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/DMGiulioRomano/TTS-Gateway/main/scripts/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/DMGiulioRomano/TTS-Daemon/main/scripts/install.sh | sh
 ```
 
 **Docker** (API + synthesis; playback needs host audio — see
 [docs/installation.md](docs/installation.md)):
 
 ```sh
-docker build -t tts-gateway https://github.com/DMGiulioRomano/TTS-Gateway.git
-docker run --rm -p 5111:5111 tts-gateway
+docker build -t tts-daemon https://github.com/DMGiulioRomano/TTS-Daemon.git
+docker run --rm -p 5111:5111 tts-daemon
 ```
-
-> The PyPI distribution is `tts-daemon` (the `tts-gateway` name was taken);
-> the command it installs is still `tts-gateway`.
 
 ## The 60-second tour
 
 Start the server:
 
 ```console
-$ tts-gateway serve
+$ tts-daemon serve
 INFO:     Uvicorn running on http://127.0.0.1:5111 (Press CTRL+C to quit)
 ```
 
 Speak from a second terminal (beeps until Piper is set up):
 
 ```console
-$ tts-gateway speak "It works"
+$ tts-daemon speak "It works"
 [9e01742e98c1] synthesizing via tone
 ```
 
@@ -88,7 +85,7 @@ $ curl -X POST localhost:5111/v1/speak -H 'content-type: application/json' \
 Check what the gateway is doing:
 
 ```console
-$ tts-gateway status
+$ tts-daemon status
 default provider : tone
 playback         : available
 speaking         : (idle)
@@ -100,16 +97,16 @@ queued           : 0/64
 ```sh
 pip install piper-tts
 
-mkdir -p ~/.local/share/tts-gateway/piper
+mkdir -p ~/.local/share/tts-daemon/piper
 python3 -m piper.download_voices en_US-lessac-medium \
-  --data-dir ~/.local/share/tts-gateway/piper
+  --data-dir ~/.local/share/tts-daemon/piper
 
-tts-gateway speak "Now with an actual voice"
+tts-daemon speak "Now with an actual voice"
 ```
 
 The gateway's default provider is `auto`: it picks Piper as soon as the
 binary and a voice model are found, and falls back to `tone` otherwise.
-`tts-gateway providers` shows what is available and why. Full details (voice
+`tts-daemon providers` shows what is available and why. Full details (voice
 downloads, macOS/Linux audio notes, running as a service):
 [docs/installation.md](docs/installation.md).
 
@@ -127,7 +124,7 @@ downloads, macOS/Linux audio notes, running as a service):
 
 ### How it compares
 
-|                              | tts-gateway | raw `piper` CLI | `speech-dispatcher` / `say` | cloud TTS APIs |
+|                              | tts-daemon | raw `piper` CLI | `speech-dispatcher` / `say` | cloud TTS APIs |
 | ---------------------------- | :---------: | :-------------: | :-------------------------: | :------------: |
 | Speech queue + interrupt     | ✅          | ❌              | partial¹                    | ❌ (DIY)       |
 | Swappable engines            | ✅          | ❌ (Piper only) | ✅ (its own modules)        | ❌ (one vendor) |
@@ -170,10 +167,10 @@ curl -X POST localhost:5111/v1/speak -H 'content-type: application/json' \
   (Alt+A) on ChatGPT/Claude/Gemini or any configurable site.
 - **Claude Code** — a [hook script](integrations/claude-code) that reads
   Claude's replies and notifications aloud.
-- **Terminal** — the `tts-gateway` CLI (`speak`, `stop`, `status`, `voices`,
+- **Terminal** — the `tts-daemon` CLI (`speak`, `stop`, `status`, `voices`,
   `providers`, `synthesize`), plus [shell aliases](examples/README.md).
 - **Your code** — a zero-dependency Python client
-  (`tts_gateway.client.GatewayClient`) and [examples](examples) for REST and
+  (`tts_daemon.client.GatewayClient`) and [examples](examples) for REST and
   WebSocket.
 
 <p align="center">
@@ -184,19 +181,19 @@ curl -X POST localhost:5111/v1/speak -H 'content-type: application/json' \
 ## Configuration
 
 Optional — the defaults just work. Generate an annotated config with
-`tts-gateway init-config` (written to `~/.config/tts-gateway/config.yaml`):
+`tts-daemon init-config` (written to `~/.config/tts-daemon/config.yaml`):
 
 ```yaml
 speech:
   default_provider: auto   # or: piper, tone, ...
 providers:
   piper:
-    models_dir: ~/.local/share/tts-gateway/piper
+    models_dir: ~/.local/share/tts-daemon/piper
     default_voice: en_US-lessac-medium
 ```
 
 Every key can also be set by environment variable
-(`TTS_GATEWAY__SERVER__PORT=6000`). See
+(`TTS_DAEMON__SERVER__PORT=6000`). See
 [docs/configuration.md](docs/configuration.md).
 
 ## Architecture
@@ -222,7 +219,7 @@ the locking/lifecycle rules live in [docs/architecture.md](docs/architecture.md)
 
 **Adding an engine** means implementing one small interface
 (`synthesize`, `voices`, `availability`) and registering it — either in-tree
-or from your own package via the `tts_gateway.providers` entry point group,
+or from your own package via the `tts_daemon.providers` entry point group,
 with no gateway changes. Walkthrough: [docs/providers.md](docs/providers.md).
 
 ## Documentation
@@ -240,10 +237,10 @@ with no gateway changes. Walkthrough: [docs/providers.md](docs/providers.md).
 
 ## Star history
 
-<a href="https://star-history.com/#DMGiulioRomano/TTS-Gateway&Date">
+<a href="https://star-history.com/#DMGiulioRomano/TTS-Daemon&Date">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=DMGiulioRomano/TTS-Gateway&type=Date&theme=dark">
-    <img src="https://api.star-history.com/svg?repos=DMGiulioRomano/TTS-Gateway&type=Date" alt="Star history chart" width="600">
+    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=DMGiulioRomano/TTS-Daemon&type=Date&theme=dark">
+    <img src="https://api.star-history.com/svg?repos=DMGiulioRomano/TTS-Daemon&type=Date" alt="Star history chart" width="600">
   </picture>
 </a>
 

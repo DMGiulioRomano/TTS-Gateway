@@ -27,19 +27,19 @@ pip install tts-daemon
 From a checkout (for development, see [development.md](development.md)):
 
 ```sh
-git clone https://github.com/DMGiulioRomano/TTS-Gateway.git
-cd TTS-Gateway
+git clone https://github.com/DMGiulioRomano/TTS-Daemon.git
+cd TTS-Daemon
 pip install .
 ```
 
-The PyPI distribution is named `tts-daemon` (the `tts-gateway` name was
+The PyPI distribution is named `tts-daemon` (the `tts-daemon` name was
 already taken by an unrelated project); the command it installs is still
-`tts-gateway`. Verify:
+`tts-daemon`. Verify:
 
 ```sh
-tts-gateway serve
+tts-daemon serve
 # in another terminal:
-tts-gateway speak "It works"
+tts-daemon speak "It works"
 curl -s localhost:5111/health
 ```
 
@@ -62,12 +62,12 @@ location).
 ### 2. A voice
 
 Voices are `.onnx` model files with a `.onnx.json` sidecar. The gateway
-looks in `~/.local/share/tts-gateway/piper` by default:
+looks in `~/.local/share/tts-daemon/piper` by default:
 
 ```sh
-mkdir -p ~/.local/share/tts-gateway/piper
+mkdir -p ~/.local/share/tts-daemon/piper
 python3 -m piper.download_voices en_US-lessac-medium \
-  --data-dir ~/.local/share/tts-gateway/piper
+  --data-dir ~/.local/share/tts-daemon/piper
 ```
 
 Any voice from the [Piper voice catalogue](https://github.com/OHF-Voice/piper1-gpl/blob/main/docs/VOICES.md)
@@ -75,7 +75,7 @@ works; download as many as you like and select per request with `voice`.
 If you already keep voices elsewhere, point the gateway at them:
 
 ```yaml
-# ~/.config/tts-gateway/config.yaml
+# ~/.config/tts-daemon/config.yaml
 providers:
   piper:
     models_dir: /path/to/your/voices
@@ -85,11 +85,11 @@ providers:
 ### 3. Check
 
 ```sh
-tts-gateway providers
+tts-daemon providers
 # * piper      available
 #   tone       available
-tts-gateway voices
-tts-gateway speak "A real voice at last"
+tts-daemon voices
+tts-daemon speak "A real voice at last"
 ```
 
 With `default_provider: auto` (the default), Piper is preferred as soon as
@@ -121,14 +121,14 @@ comes with an explanation in the server log.
 
 ### systemd (Linux)
 
-`~/.config/systemd/user/tts-gateway.service`:
+`~/.config/systemd/user/tts-daemon.service`:
 
 ```ini
 [Unit]
-Description=TTS Gateway
+Description=TTS Daemon
 
 [Service]
-ExecStart=%h/.local/bin/tts-gateway serve
+ExecStart=%h/.local/bin/tts-daemon serve
 Restart=on-failure
 
 [Install]
@@ -137,30 +137,30 @@ WantedBy=default.target
 
 ```sh
 systemctl --user daemon-reload
-systemctl --user enable --now tts-gateway
+systemctl --user enable --now tts-daemon
 ```
 
-(Adjust `ExecStart` to wherever pip installed the script: `which tts-gateway`.)
+(Adjust `ExecStart` to wherever pip installed the script: `which tts-daemon`.)
 
 ### launchd (macOS)
 
-`~/Library/LaunchAgents/dev.tts-gateway.plist`:
+`~/Library/LaunchAgents/dev.tts-daemon.plist`:
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
   "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0"><dict>
-  <key>Label</key><string>dev.tts-gateway</string>
+  <key>Label</key><string>dev.tts-daemon</string>
   <key>ProgramArguments</key>
-  <array><string>/usr/local/bin/tts-gateway</string><string>serve</string></array>
+  <array><string>/usr/local/bin/tts-daemon</string><string>serve</string></array>
   <key>RunAtLoad</key><true/>
   <key>KeepAlive</key><true/>
 </dict></plist>
 ```
 
 ```sh
-launchctl load ~/Library/LaunchAgents/dev.tts-gateway.plist
+launchctl load ~/Library/LaunchAgents/dev.tts-daemon.plist
 ```
 
 ## Security note
@@ -175,5 +175,5 @@ do it only on a network where that is acceptable, and restrict
 
 ```sh
 pip uninstall tts-daemon     # or: pipx uninstall tts-daemon
-rm -rf ~/.config/tts-gateway ~/.local/share/tts-gateway
+rm -rf ~/.config/tts-daemon ~/.local/share/tts-daemon
 ```

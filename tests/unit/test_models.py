@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from tests.conftest import make_clip
-from tts_gateway.core.models import (
+from tts_daemon.core.models import (
     AudioClip,
     AudioFormat,
     Availability,

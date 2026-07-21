@@ -19,7 +19,7 @@ format:             ## auto-fix style and imports
 check: lint test    ## everything CI runs
 
 serve:              ## run a local dev server
-	python3 -m tts_gateway serve
+	python3 -m tts_daemon serve
 
 clean:
 	rm -rf build dist *.egg-info src/*.egg-info .pytest_cache .ruff_cache

@@ -6,13 +6,13 @@ from pathlib import Path
 
 import pytest
 
-from tts_gateway.config import (
+from tts_daemon.config import (
     EXAMPLE_CONFIG,
     GatewayConfig,
     default_config_path,
     load_config,
 )
-from tts_gateway.core.errors import ConfigError
+from tts_daemon.core.errors import ConfigError
 
 
 def isolated_env(tmp_path: Path, **extra: str) -> dict[str, str]:
@@ -32,10 +32,10 @@ class TestDefaults:
 
     def test_default_config_path_respects_xdg(self, tmp_path: Path) -> None:
         env = {"XDG_CONFIG_HOME": str(tmp_path)}
-        assert default_config_path(env) == tmp_path / "tts-gateway" / "config.yaml"
+        assert default_config_path(env) == tmp_path / "tts-daemon" / "config.yaml"
 
     def test_default_config_path_falls_back_to_home(self) -> None:
-        assert default_config_path({}) == Path.home() / ".config" / "tts-gateway" / "config.yaml"
+        assert default_config_path({}) == Path.home() / ".config" / "tts-daemon" / "config.yaml"
 
 
 class TestFileLoading:
@@ -48,7 +48,7 @@ class TestFileLoading:
     def test_env_var_path(self, tmp_path: Path) -> None:
         path = tmp_path / "conf.yaml"
         path.write_text("speech: {default_provider: tone}\n")
-        env = isolated_env(tmp_path, TTS_GATEWAY_CONFIG=str(path))
+        env = isolated_env(tmp_path, TTS_DAEMON_CONFIG=str(path))
         assert load_config(env=env).speech.default_provider == "tone"
 
     def test_default_location_is_used_when_present(self, tmp_path: Path) -> None:
@@ -76,9 +76,9 @@ class TestEnvOverrides:
     def test_scalar_and_nested(self, tmp_path: Path) -> None:
         env = isolated_env(
             tmp_path,
-            TTS_GATEWAY__SERVER__PORT="6002",
-            TTS_GATEWAY__SPEECH__DEFAULT_PROVIDER="tone",
-            TTS_GATEWAY__PROVIDERS__PIPER__MODELS_DIR="/opt/voices",
+            TTS_DAEMON__SERVER__PORT="6002",
+            TTS_DAEMON__SPEECH__DEFAULT_PROVIDER="tone",
+            TTS_DAEMON__PROVIDERS__PIPER__MODELS_DIR="/opt/voices",
         )
         config = load_config(env=env)
         assert config.server.port == 6002
@@ -86,23 +86,23 @@ class TestEnvOverrides:
         assert config.provider_settings("piper")["models_dir"] == "/opt/voices"
 
     def test_list_value(self, tmp_path: Path) -> None:
-        env = isolated_env(tmp_path, TTS_GATEWAY__SPEECH__PROVIDER_PRIORITY="[tone, piper]")
+        env = isolated_env(tmp_path, TTS_DAEMON__SPEECH__PROVIDER_PRIORITY="[tone, piper]")
         assert load_config(env=env).speech.provider_priority == ["tone", "piper"]
 
     def test_env_beats_file(self, tmp_path: Path) -> None:
         path = tmp_path / "conf.yaml"
         path.write_text("server: {port: 6001}\n")
-        env = isolated_env(tmp_path, TTS_GATEWAY__SERVER__PORT="6002")
+        env = isolated_env(tmp_path, TTS_DAEMON__SERVER__PORT="6002")
         assert load_config(path, env=env).server.port == 6002
 
     def test_backend_null_word_means_null_backend(self, tmp_path: Path) -> None:
         # YAML parses the bare word "null" as None; the config must still
         # understand the user meant the null backend.
-        env = isolated_env(tmp_path, TTS_GATEWAY__PLAYBACK__BACKEND="null")
+        env = isolated_env(tmp_path, TTS_DAEMON__PLAYBACK__BACKEND="null")
         assert load_config(env=env).playback.backend == "null"
 
     def test_unparseable_value_stays_string(self, tmp_path: Path) -> None:
-        env = isolated_env(tmp_path, TTS_GATEWAY__LOGGING__LEVEL="{not: [valid")
+        env = isolated_env(tmp_path, TTS_DAEMON__LOGGING__LEVEL="{not: [valid")
         assert load_config(env=env).logging.level == "{not: [valid"
 
 
@@ -112,7 +112,7 @@ class TestErrors:
             load_config(tmp_path / "nope.yaml", env=isolated_env(tmp_path))
 
     def test_missing_env_file(self, tmp_path: Path) -> None:
-        env = isolated_env(tmp_path, TTS_GATEWAY_CONFIG=str(tmp_path / "gone.yaml"))
+        env = isolated_env(tmp_path, TTS_DAEMON_CONFIG=str(tmp_path / "gone.yaml"))
         with pytest.raises(ConfigError, match="missing file"):
             load_config(env=env)
 

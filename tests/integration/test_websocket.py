@@ -9,7 +9,7 @@ from fastapi.testclient import TestClient
 from starlette.testclient import WebSocketTestSession
 
 from tests.conftest import make_config
-from tts_gateway.api.app import create_app
+from tts_daemon.api.app import create_app
 
 
 @pytest.fixture()

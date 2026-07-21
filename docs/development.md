@@ -3,8 +3,8 @@
 ## Setup
 
 ```sh
-git clone https://github.com/DMGiulioRomano/TTS-Gateway.git
-cd TTS-Gateway
+git clone https://github.com/DMGiulioRomano/TTS-Daemon.git
+cd TTS-Daemon
 python3 -m venv .venv && source .venv/bin/activate
 pip install -e '.[dev]'
 ```
@@ -28,7 +28,7 @@ Without make: `python3 -m pytest`, `ruff check src tests`,
 ### Live-reload server
 
 ```sh
-uvicorn --factory tts_gateway.api.app:create_app --reload --port 5111
+uvicorn --factory tts_daemon.api.app:create_app --reload --port 5111
 ```
 
 ### Trying real audio locally
@@ -36,8 +36,8 @@ uvicorn --factory tts_gateway.api.app:create_app --reload --port 5111
 The test suite never makes sound. To hear something:
 
 ```sh
-tts-gateway serve                       # terminal 1
-tts-gateway speak "beep beep" # terminal 2 — tone provider, no engine needed
+tts-daemon serve                       # terminal 1
+tts-daemon speak "beep beep" # terminal 2 — tone provider, no engine needed
 ```
 
 For real speech install Piper ([installation.md](installation.md)).
@@ -45,7 +45,7 @@ For real speech install Piper ([installation.md](installation.md)).
 ## Repository map
 
 ```
-src/tts_gateway/
+src/tts_daemon/
 ├── core/            framework-free domain: models, interfaces, queue,
 │                    service, events, errors
 ├── providers/       TTS engines + registry (entry-point discovery)
@@ -99,7 +99,7 @@ pushing a `v*` tag builds the sdist + wheel, publishes to PyPI via trusted
 publishing (OIDC — no token secrets), and creates a GitHub Release with the
 notes taken from `CHANGELOG.md`.
 
-1. Update `__version__` in `src/tts_gateway/__init__.py` and the
+1. Update `__version__` in `src/tts_daemon/__init__.py` and the
    `[project]` version in `pyproject.toml` (keep them equal —
    `python3 scripts/check_version.py` verifies, and the release workflow
    fails if they diverge or don't match the tag).
@@ -114,6 +114,6 @@ notes taken from `CHANGELOG.md`.
 
 One-time setup (already done for this repo): configure the trusted
 publisher for the `tts-daemon` project on pypi.org and test.pypi.org
-(repository `DMGiulioRomano/TTS-Gateway`, workflow `release.yml`,
+(repository `DMGiulioRomano/TTS-Daemon`, workflow `release.yml`,
 environments `pypi` / `testpypi`), and create those two environments in
 the repo settings.

@@ -1,7 +1,7 @@
 #!/bin/sh
 # Regenerate the audio samples for the GitHub Pages samples site
 # (docs/samples/). Keeps the published samples honest: everything on the
-# page is produced by `tts-gateway synthesize` with this script.
+# page is produced by `tts-daemon synthesize` with this script.
 #
 # Usage:  scripts/make_samples.sh [gateway-url]
 #
@@ -15,7 +15,7 @@ OUT="$(dirname "$0")/../docs/samples/audio"
 mkdir -p "$OUT"
 
 if ! curl -fsS "$URL/health" >/dev/null 2>&1; then
-    echo "error: no gateway at $URL — start one with 'tts-gateway serve'" >&2
+    echo "error: no gateway at $URL — start one with 'tts-daemon serve'" >&2
     exit 1
 fi
 
@@ -24,7 +24,7 @@ synth() {
     provider="$1"; voice="$2"; outfile="$3"; text="$4"
     set -- --provider "$provider" -o "$OUT/$outfile" --url "$URL"
     [ "$voice" != "-" ] && set -- "$@" --voice "$voice"
-    if tts-gateway synthesize "$@" "$text" 2>/dev/null; then
+    if tts-daemon synthesize "$@" "$text" 2>/dev/null; then
         echo "  ok    $outfile"
     else
         echo "  skip  $outfile ($provider/$voice not available)"

@@ -21,9 +21,9 @@ import math
 import struct
 import wave
 
-from tts_gateway.core.errors import SynthesisError
-from tts_gateway.core.interfaces import TTSProvider
-from tts_gateway.core.models import AudioClip, AudioFormat, SynthesisRequest, Voice
+from tts_daemon.core.errors import SynthesisError
+from tts_daemon.core.interfaces import TTSProvider
+from tts_daemon.core.models import AudioClip, AudioFormat, SynthesisRequest, Voice
 
 SAMPLE_RATE = 22_050
 AMPLITUDE = 0.30  # peak amplitude in [0, 1]; kept low to be easy on the ears
