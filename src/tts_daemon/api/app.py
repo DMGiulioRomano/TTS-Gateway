@@ -9,13 +9,14 @@ embedding straightforward.
 from __future__ import annotations
 
 from contextlib import asynccontextmanager
+from importlib.resources import files
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse
 
 from tts_daemon import __version__
-from tts_daemon.api import http, websocket
+from tts_daemon.api import http, openai_compat, websocket
 from tts_daemon.api.schemas import HealthResponse
 from tts_daemon.config import GatewayConfig, load_config
 from tts_daemon.core.errors import (
@@ -98,6 +99,7 @@ def create_app(config: GatewayConfig | None = None) -> FastAPI:
         return JSONResponse(status_code=status_code_for(exc), content={"detail": str(exc)})
 
     app.include_router(http.router, prefix="/v1")
+    app.include_router(openai_compat.router, prefix="/v1")
     app.include_router(websocket.router)
 
     @app.get("/health", response_model=HealthResponse, tags=["meta"])
@@ -106,32 +108,20 @@ def create_app(config: GatewayConfig | None = None) -> FastAPI:
 
     @app.get("/", response_class=HTMLResponse, include_in_schema=False)
     async def index() -> str:
-        return _INDEX_HTML
+        return _playground_html()
 
     return app
 
 
-_INDEX_HTML = f"""\
-<!doctype html>
-<html lang="en">
-<head><meta charset="utf-8"><title>tts-daemon</title>
-<style>
-  body {{ font: 16px/1.6 system-ui, sans-serif; max-width: 42rem;
-         margin: 3rem auto; padding: 0 1rem; }}
-  code {{ background: #8881; padding: .1em .35em; border-radius: 4px; }}
-</style>
-</head>
-<body>
-<h1>tts-daemon <small>v{__version__}</small></h1>
-<p>A local text-to-speech gateway. Interactive API docs: <a href="/docs">/docs</a></p>
-<p>Try it:</p>
-<pre><code>curl -X POST localhost:5111/v1/speak \\
-  -H 'content-type: application/json' \\
-  -d '{{"text": "Hello from the gateway"}}'</code></pre>
-<p>Endpoints: <code>POST /v1/speak</code>, <code>POST /v1/stop</code>,
-<code>POST /v1/synthesize</code>, <code>GET /v1/status</code>,
-<code>GET /v1/voices</code>, <code>GET /v1/providers</code>,
-<code>WS /v1/ws</code>, <code>GET /health</code></p>
-</body>
-</html>
-"""
+def _playground_html() -> str:
+    """The interactive playground page, read from packaged static data (cached)."""
+    global _INDEX_HTML
+    if _INDEX_HTML is None:
+        _INDEX_HTML = (files("tts_daemon.api") / "static" / "index.html").read_text(
+            encoding="utf-8"
+        )
+    return _INDEX_HTML
+
+
+#: Lazily-loaded, then cached playground markup.
+_INDEX_HTML: str | None = None

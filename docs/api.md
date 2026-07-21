@@ -80,6 +80,34 @@ curl -X POST localhost:5111/v1/synthesize -H 'content-type: application/json' \
   -d '{"text": "saved, not spoken"}' -o clip.wav
 ```
 
+## `POST /v1/audio/speech` (OpenAI-compatible)
+
+A drop-in for OpenAI's speech endpoint: point any OpenAI TTS client at the
+gateway's `/v1` base URL and it synthesizes locally instead.
+
+Request (OpenAI's schema):
+
+| Field             | Type   | Default    | Notes                                                        |
+| ----------------- | ------ | ---------- | ------------------------------------------------------------ |
+| `model`           | string | *required* | `tts-1`/`tts-1-hd` → gateway default provider; a registered provider name (`piper`, `tone`) selects it explicitly. |
+| `input`           | string | *required* | Text to speak.                                               |
+| `voice`           | string | *required* | Mapped via `openai_compat.voice_aliases`; an unmapped standard OpenAI voice (`alloy`, `nova`, …) falls back to the provider default; anything else is passed through as a provider voice id. |
+| `response_format` | string | *unset*    | Only `wav` is supported today; other values → 422.          |
+| `speed`           | number | `1.0`      | OpenAI range `0.25`–`4.0`.                                   |
+
+Returns raw audio bytes (`audio/wav`). An `Authorization` header is accepted
+and ignored (until [#18](https://github.com/DMGiulioRomano/TTS-Daemon/issues/18)).
+
+```python
+from openai import OpenAI
+client = OpenAI(base_url="http://127.0.0.1:5111/v1", api_key="unused")
+client.audio.speech.create(
+    model="tts-1", voice="alloy", input="Hello", response_format="wav",
+).stream_to_file("out.wav")  # → synthesized by the gateway's provider, locally
+```
+
+See [examples/openai_compat.py](../examples/openai_compat.py).
+
 ## `POST /v1/stop`
 
 Cancel every queued utterance and interrupt the one playing.
@@ -101,12 +129,15 @@ Cancel every queued utterance and interrupt the one playing.
   },
   "default_provider": "piper",
   "default_provider_error": null,
-  "playback_available": true
+  "playback_available": true,
+  "cache": { "entries": 12, "size_mb": 3.4, "hits": 87, "misses": 20 }
 }
 ```
 
 `default_provider` is the *resolved* default (what `auto` picked); when
 nothing is available it is `null` and `default_provider_error` explains why.
+`cache` reports the synthesis cache (`hits`/`misses` count since the server
+started) and is `null` when the cache is disabled (`cache.enabled: false`).
 
 ## `GET /v1/utterances/{id}`
 
@@ -147,6 +178,38 @@ found on PATH...").
 ```json
 { "status": "ok", "version": "0.1.0" }
 ```
+
+## `GET /v1/events`
+
+A read-only live event stream as [Server-Sent Events][sse] — the same
+payloads the WebSocket pushes as `event` messages, but consumable with plain
+`curl` or a browser `EventSource`, no WebSocket client required.
+
+```sh
+curl -N localhost:5111/v1/events
+# : connected
+# event: utterance.speaking
+# data: {"type":"utterance.speaking","data":{"id":"5e7136b47ba1",...},"timestamp":...}
+```
+
+Each event is one SSE frame: an `event:` line (the event type) followed by a
+`data:` line (the JSON payload). Lines beginning with `:` are comments — an
+opening `: connected` and a `: ping` heartbeat every ~15 s so idle streams
+survive proxies.
+
+| Query   | Notes                                                                  |
+| ------- | ---------------------------------------------------------------------- |
+| `types` | Comma-separated event types to include, e.g. `?types=utterance.finished,queue.cleared`. All events when omitted. |
+
+Same event types, snapshot semantics, and slow-consumer policy (oldest
+dropped, 256-event buffer) as the WebSocket stream below. In a browser:
+
+```js
+const es = new EventSource("/v1/events");
+es.addEventListener("utterance.finished", (e) => console.log(JSON.parse(e.data)));
+```
+
+[sse]: https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events
 
 ## WebSocket: `/v1/ws`
 

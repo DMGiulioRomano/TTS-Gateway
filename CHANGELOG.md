@@ -6,6 +6,39 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- **Web playground at `/`**: the root page is now an interactive playground
+  instead of a static info page. Type text, pick a provider and voice
+  (populated live from `/v1/providers` and `/v1/voices`, unavailable providers
+  shown disabled with their reason), set speed, then **Speak** (server-side),
+  **Play here** (in-browser via `/v1/synthesize`), or **Stop** — with a live
+  panel of the current utterance, queue, and lifecycle events over WebSocket.
+  Single self-contained HTML file (inline CSS/JS, zero build, zero external
+  requests, dark/light aware), shipped as package data.
+
+- **SSE events endpoint** (`GET /v1/events`): the live gateway event stream as
+  Server-Sent Events, consumable with plain `curl -N` or a browser
+  `EventSource` — no WebSocket client needed. Supports a `?types=` filter,
+  emits a `: ping` heartbeat every ~15 s, and reuses the WebSocket's
+  snapshot/slow-consumer semantics. The thread→asyncio event bridge is now a
+  shared `api/event_bridge.py` helper used by both the WebSocket and SSE.
+- **On-disk synthesis cache**: repeated phrases replay instantly instead of
+  re-synthesizing. A size-bounded LRU store under `$XDG_CACHE_HOME/tts-daemon`
+  keyed by provider, voice, speed, options, text, and a provider fingerprint
+  (piper folds in the voice model's mtime so a swapped model invalidates
+  cached clips). New `cache` config section (`enabled`, `max_mb`, `dir`; on by
+  default), per-request `no_cache` option to bypass, and cache stats
+  (`entries`, `size_mb`, `hits`, `misses`) in `GET /v1/status`. Atomic writes
+  and corruption-tolerant (a broken cache is a miss, never an error).
+- **OpenAI-compatible endpoint** (`POST /v1/audio/speech`): a drop-in for
+  OpenAI's speech API, so any OpenAI TTS client synthesizes locally by pointing
+  its `base_url` at the gateway. Maps `model` (generic names → default provider,
+  a provider name selects it), `voice` (via a new `openai_compat.voice_aliases`
+  config section, falling back to the provider default), and `speed`; `wav`
+  response format supported (others → 422). Runnable `examples/openai_compat.py`
+  using the official `openai` client.
+
 ## [0.1.0] - 2026-07-21
 
 First public release.

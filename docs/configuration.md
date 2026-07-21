@@ -60,6 +60,23 @@ TTS_DAEMON__PLAYBACK__BACKEND=null
 | `backend` | `auto`  | `auto` (detect a playback command), `command` (always use `command`), `null` (synthesize but stay silent — for headless/API-only use). |
 | `command` | *unset* | Playback argv override, e.g. `["ffplay", "-autoexit", "-nodisp", "-loglevel", "quiet", "{file}"]`. `{file}` is replaced with a temporary audio file; without it, audio bytes are piped to stdin. |
 
+### `cache`
+
+Caches synthesized clips on disk so repeated phrases (notifications, hook
+messages) replay instantly. The key covers the provider, voice, speed,
+options, and text — plus a provider fingerprint (piper folds in the voice
+model's mtime), so swapping a model invalidates stale clips.
+
+| Key       | Default | Meaning                                                              |
+| --------- | ------- | -------------------------------------------------------------------- |
+| `enabled` | `true`  | Turn the cache off with `false`.                                     |
+| `max_mb`  | `200`   | Size budget; least-recently-used clips are evicted once exceeded.    |
+| `dir`     | *unset* | Storage directory; defaults to `$XDG_CACHE_HOME/tts-daemon` (`~/.cache/tts-daemon`). |
+
+Bypass the cache for a single request with the `no_cache` option, e.g.
+`{"text": "...", "options": {"no_cache": true}}`. Stats are reported by
+`GET /v1/status`.
+
 ### `logging`
 
 | Key     | Default | Meaning                                     |
