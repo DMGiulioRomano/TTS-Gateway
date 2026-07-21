@@ -92,6 +92,18 @@ speaking         : (idle)
 queued           : 0/64
 ```
 
+### Or open the playground
+
+With the server running, open <http://127.0.0.1:5111/> — type text, pick a
+provider and voice, hear it (server-side **Speak** or in-browser **Play
+here**), and watch the queue and lifecycle events update live over WebSocket.
+No build step, no external requests; works out of the box with the `tone`
+provider.
+
+<p align="center">
+  <img src="assets/playground.png" alt="tts-daemon web playground: text input, provider/voice/speed controls, and a live queue and event panel" width="820">
+</p>
+
 ### Give it a real voice (Piper)
 
 ```sh

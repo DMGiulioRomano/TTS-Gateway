@@ -8,6 +8,15 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **Web playground at `/`**: the root page is now an interactive playground
+  instead of a static info page. Type text, pick a provider and voice
+  (populated live from `/v1/providers` and `/v1/voices`, unavailable providers
+  shown disabled with their reason), set speed, then **Speak** (server-side),
+  **Play here** (in-browser via `/v1/synthesize`), or **Stop** — with a live
+  panel of the current utterance, queue, and lifecycle events over WebSocket.
+  Single self-contained HTML file (inline CSS/JS, zero build, zero external
+  requests, dark/light aware), shipped as package data.
+
 - **SSE events endpoint** (`GET /v1/events`): the live gateway event stream as
   Server-Sent Events, consumable with plain `curl -N` or a browser
   `EventSource` — no WebSocket client needed. Supports a `?types=` filter,

@@ -27,11 +27,16 @@ class TestMeta:
         assert body["status"] == "ok"
         assert body["version"]
 
-    def test_index_page_links_docs(self, client: TestClient) -> None:
+    def test_index_serves_playground(self, client: TestClient) -> None:
         response = client.get("/")
         assert response.status_code == 200
         assert "text/html" in response.headers["content-type"]
-        assert "/docs" in response.text
+        assert "/docs" in response.text  # keeps the docs link
+        assert 'id="app"' in response.text  # the playground root marker
+        assert "tts-daemon playground" in response.text
+        # Zero external requests: no absolute http(s) asset URLs in the page.
+        assert "http://" not in response.text
+        assert "https://" not in response.text
 
     def test_openapi_schema_is_served(self, client: TestClient) -> None:
         assert client.get("/openapi.json").status_code == 200

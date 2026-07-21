@@ -1,0 +1,326 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>tts-daemon playground</title>
+<style>
+  :root {
+    --bg: #fafafa; --fg: #1a1a1a; --muted: #666; --border: #ddd;
+    --card: #fff; --accent: #2b6cb0; --accent-fg: #fff;
+    --ok: #2f855a; --warn: #c05621; --err: #c53030; --chip: #edf2f7;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #16181d; --fg: #e6e6e6; --muted: #9aa0a6; --border: #333;
+      --card: #1e2127; --accent: #4a90d9; --accent-fg: #fff;
+      --ok: #68d391; --warn: #f6ad55; --err: #fc8181; --chip: #2a2f38;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    font: 15px/1.5 system-ui, -apple-system, sans-serif;
+    margin: 0; background: var(--bg); color: var(--fg);
+  }
+  header {
+    display: flex; align-items: baseline; gap: .6rem; flex-wrap: wrap;
+    padding: 1rem 1.25rem; border-bottom: 1px solid var(--border);
+  }
+  header h1 { font-size: 1.25rem; margin: 0; }
+  header .ver { color: var(--muted); font-size: .85rem; }
+  header a { color: var(--accent); margin-left: auto; }
+  main {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;
+    max-width: 60rem; margin: 1rem auto; padding: 0 1rem;
+  }
+  @media (max-width: 640px) { main { grid-template-columns: 1fr; } }
+  .card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 10px; padding: 1rem;
+  }
+  label { display: block; font-size: .8rem; color: var(--muted); margin: .6rem 0 .2rem; }
+  textarea, select, input[type=range] { width: 100%; }
+  textarea {
+    min-height: 6rem; resize: vertical; padding: .6rem; border-radius: 8px;
+    border: 1px solid var(--border); background: var(--bg); color: var(--fg);
+    font: inherit;
+  }
+  select {
+    padding: .45rem; border-radius: 8px; border: 1px solid var(--border);
+    background: var(--bg); color: var(--fg); font: inherit;
+  }
+  .row { display: flex; gap: .75rem; }
+  .row > div { flex: 1; }
+  .controls { display: flex; gap: .5rem; flex-wrap: wrap; align-items: center; margin-top: .9rem; }
+  button {
+    font: inherit; padding: .5rem .9rem; border-radius: 8px; cursor: pointer;
+    border: 1px solid var(--border); background: var(--chip); color: var(--fg);
+  }
+  button.primary { background: var(--accent); color: var(--accent-fg); border-color: transparent; }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  .check { display: flex; align-items: center; gap: .35rem; color: var(--muted); font-size: .85rem; }
+  .check input { width: auto; }
+  .speedval { font-variant-numeric: tabular-nums; color: var(--muted); font-size: .85rem; }
+  .badge {
+    display: inline-block; padding: .1rem .5rem; border-radius: 999px;
+    font-size: .75rem; background: var(--chip); color: var(--fg);
+  }
+  .badge.speaking { background: var(--accent); color: var(--accent-fg); }
+  .badge.finished { background: var(--ok); color: #fff; }
+  .badge.failed, .badge.cancelled { background: var(--err); color: #fff; }
+  .badge.synthesizing, .badge.queued { background: var(--warn); color: #fff; }
+  h2 { font-size: .95rem; margin: 0 0 .5rem; }
+  .muted { color: var(--muted); }
+  ul.queue, ul.events { list-style: none; margin: .3rem 0 0; padding: 0; }
+  ul.queue li { padding: .25rem 0; border-bottom: 1px dashed var(--border); font-size: .85rem; }
+  ul.events {
+    max-height: 15rem; overflow-y: auto; font-family: ui-monospace, monospace;
+    font-size: .78rem;
+  }
+  ul.events li { padding: .15rem 0; color: var(--muted); }
+  ul.events li b { color: var(--fg); font-weight: 600; }
+  .conn { font-size: .75rem; }
+  .conn.up { color: var(--ok); }
+  .conn.down { color: var(--err); }
+  #status-msg { min-height: 1.2rem; font-size: .82rem; margin-top: .5rem; }
+  #status-msg.err { color: var(--err); }
+</style>
+</head>
+<body>
+<header>
+  <h1>tts-daemon</h1>
+  <span class="ver" id="version">playground</span>
+  <a href="/docs">API docs →</a>
+</header>
+
+<main id="app">
+  <section class="card">
+    <label for="text">Text</label>
+    <textarea id="text" placeholder="Type something to hear it…">Hello from the tts-daemon playground.</textarea>
+
+    <div class="row">
+      <div>
+        <label for="provider">Provider</label>
+        <select id="provider"></select>
+      </div>
+      <div>
+        <label for="voice">Voice</label>
+        <select id="voice"></select>
+      </div>
+    </div>
+
+    <label for="speed">Speed <span class="speedval" id="speedval">1.0×</span></label>
+    <input type="range" id="speed" min="0.5" max="2" step="0.1" value="1">
+
+    <div class="controls">
+      <button class="primary" id="speak">Speak</button>
+      <button id="play">Play here</button>
+      <button id="stop">Stop</button>
+      <label class="check"><input type="checkbox" id="interrupt"> interrupt</label>
+    </div>
+    <div id="status-msg" class="muted"></div>
+    <audio id="audio" hidden></audio>
+  </section>
+
+  <section class="card">
+    <h2>Live <span class="conn down" id="conn">● connecting…</span></h2>
+    <div>
+      <span class="muted">Now:</span>
+      <span id="now" class="badge">idle</span>
+      <span id="now-text" class="muted"></span>
+    </div>
+    <h2 style="margin-top:1rem">Queue <span class="muted" id="queue-count">(0)</span></h2>
+    <ul class="queue" id="queue"><li class="muted">empty</li></ul>
+    <h2 style="margin-top:1rem">Events</h2>
+    <ul class="events" id="events"></ul>
+  </section>
+</main>
+
+<script>
+(function () {
+  "use strict";
+  const $ = (id) => document.getElementById(id);
+  const els = {
+    text: $("text"), provider: $("provider"), voice: $("voice"),
+    speed: $("speed"), speedval: $("speedval"), speak: $("speak"),
+    play: $("play"), stop: $("stop"), interrupt: $("interrupt"),
+    status: $("status-msg"), audio: $("audio"), version: $("version"),
+    conn: $("conn"), now: $("now"), nowText: $("now-text"),
+    queue: $("queue"), queueCount: $("queue-count"), events: $("events"),
+  };
+  let voicesByProvider = {};
+
+  function setStatus(msg, isErr) {
+    els.status.textContent = msg || "";
+    els.status.className = isErr ? "err" : "muted";
+  }
+
+  async function jsonFetch(url, opts) {
+    const res = await fetch(url, opts);
+    if (!res.ok) {
+      let detail = res.status + " " + res.statusText;
+      try { detail = (await res.json()).detail || detail; } catch (e) {}
+      throw new Error(detail);
+    }
+    return res.json();
+  }
+
+  function body() {
+    return {
+      text: els.text.value,
+      provider: els.provider.value || undefined,
+      voice: els.voice.value || undefined,
+      speed: parseFloat(els.speed.value),
+    };
+  }
+
+  function refreshVoices() {
+    const list = voicesByProvider[els.provider.value] || [];
+    els.voice.innerHTML = "";
+    const dflt = document.createElement("option");
+    dflt.value = ""; dflt.textContent = "(provider default)";
+    els.voice.appendChild(dflt);
+    for (const v of list) {
+      const opt = document.createElement("option");
+      opt.value = v.id;
+      opt.textContent = v.name + (v.language ? " · " + v.language : "");
+      els.voice.appendChild(opt);
+    }
+  }
+
+  async function loadProviders() {
+    try {
+      const [{ providers }, { voices }] = await Promise.all([
+        jsonFetch("/v1/providers"), jsonFetch("/v1/voices"),
+      ]);
+      voicesByProvider = {};
+      for (const v of voices) (voicesByProvider[v.provider] ||= []).push(v);
+      els.provider.innerHTML = "";
+      for (const p of providers) {
+        const opt = document.createElement("option");
+        opt.value = p.name;
+        opt.textContent = p.name + (p.default ? " (default)" : "") +
+          (p.available ? "" : " — " + (p.reason || "unavailable"));
+        opt.disabled = !p.available;
+        if (p.default && p.available) opt.selected = true;
+        els.provider.appendChild(opt);
+      }
+      refreshVoices();
+    } catch (e) {
+      setStatus("Could not load providers: " + e.message, true);
+    }
+  }
+
+  async function loadVersion() {
+    try {
+      const h = await jsonFetch("/health");
+      els.version.textContent = "v" + h.version + " · playground";
+    } catch (e) { /* leave default label */ }
+  }
+
+  els.speed.addEventListener("input", () => {
+    els.speedval.textContent = parseFloat(els.speed.value).toFixed(1) + "×";
+  });
+  els.provider.addEventListener("change", refreshVoices);
+
+  els.speak.addEventListener("click", async () => {
+    setStatus("Queuing…");
+    try {
+      const b = body(); b.interrupt = els.interrupt.checked;
+      const { utterance } = await jsonFetch("/v1/speak", {
+        method: "POST", headers: { "content-type": "application/json" },
+        body: JSON.stringify(b),
+      });
+      setStatus("Queued " + utterance.id + " on " + utterance.provider + ".");
+    } catch (e) { setStatus(e.message, true); }
+  });
+
+  els.play.addEventListener("click", async () => {
+    setStatus("Synthesizing…");
+    try {
+      const res = await fetch("/v1/synthesize", {
+        method: "POST", headers: { "content-type": "application/json" },
+        body: JSON.stringify(body()),
+      });
+      if (!res.ok) {
+        let d = res.status; try { d = (await res.json()).detail; } catch (e) {}
+        throw new Error(d);
+      }
+      const url = URL.createObjectURL(await res.blob());
+      els.audio.src = url;
+      els.audio.play();
+      setStatus("Playing in your browser.");
+    } catch (e) { setStatus(e.message, true); }
+  });
+
+  els.stop.addEventListener("click", async () => {
+    try {
+      const { cancelled } = await jsonFetch("/v1/stop", { method: "POST" });
+      setStatus("Stopped (" + cancelled + " cancelled).");
+    } catch (e) { setStatus(e.message, true); }
+  });
+
+  // ---- live event stream over WebSocket -----------------------------------
+  function renderQueue(snap) {
+    const q = snap.queue || {};
+    const current = q.current;
+    if (current) {
+      els.now.textContent = current.state;
+      els.now.className = "badge " + current.state;
+      els.nowText.textContent = truncate(current.text);
+    } else {
+      els.now.textContent = "idle"; els.now.className = "badge";
+      els.nowText.textContent = "";
+    }
+    const items = q.queued || [];
+    els.queueCount.textContent = "(" + items.length + ")";
+    els.queue.innerHTML = items.length
+      ? "" : '<li class="muted">empty</li>';
+    for (const u of items) {
+      const li = document.createElement("li");
+      li.textContent = truncate(u.text);
+      els.queue.appendChild(li);
+    }
+  }
+
+  function truncate(s) { return s && s.length > 60 ? s.slice(0, 57) + "…" : (s || ""); }
+
+  function logEvent(ev) {
+    const li = document.createElement("li");
+    const b = document.createElement("b");
+    b.textContent = ev.type;
+    li.appendChild(b);
+    if (ev.data && ev.data.state) li.append(" " + ev.data.state);
+    els.events.insertBefore(li, els.events.firstChild);
+    while (els.events.childNodes.length > 30) els.events.removeChild(els.events.lastChild);
+  }
+
+  function connect() {
+    const proto = location.protocol === "https:" ? "wss:" : "ws:";
+    const ws = new WebSocket(proto + "//" + location.host + "/v1/ws");
+    ws.addEventListener("open", () => {
+      els.conn.textContent = "● live"; els.conn.className = "conn up";
+      ws.send(JSON.stringify({ type: "status" }));
+    });
+    ws.addEventListener("close", () => {
+      els.conn.textContent = "● disconnected"; els.conn.className = "conn down";
+      setTimeout(connect, 2000);
+    });
+    ws.addEventListener("message", (msg) => {
+      let data; try { data = JSON.parse(msg.data); } catch (e) { return; }
+      if (data.type === "event") {
+        logEvent(data.event);
+        ws.send(JSON.stringify({ type: "status" }));
+      } else if (data.type === "result" && data.request === "status") {
+        renderQueue(data.data);
+      }
+    });
+  }
+
+  loadVersion();
+  loadProviders();
+  connect();
+})();
+</script>
+</body>
+</html>
