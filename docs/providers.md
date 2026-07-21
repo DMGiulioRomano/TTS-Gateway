@@ -138,6 +138,7 @@ tts-daemon speak "testing my engine" --provider myengine
 | `piper` | `pip install piper-tts` + voice models | ✅ local | WAV | The default engine; audio never leaves the machine. |
 | `tone`  | built in                       | ✅ local | WAV | Dependency-free beeps; the always-available fallback. |
 | `edge`  | `pip install 'tts-daemon[edge]'` | ☁️ cloud | MP3 | Free Microsoft neural voices, no key. |
+| `kokoro`| `pip install 'tts-daemon[kokoro]'` + model files | ✅ local | WAV | High-quality neural (ONNX, CPU); needs the model + voices download. |
 
 ### `edge` — privacy & reliability
 
@@ -163,3 +164,25 @@ tts-daemon speak "ciao" --provider edge
 curl -X POST localhost:5111/v1/speak -H 'content-type: application/json' \
   -d '{"provider":"edge","text":"hi","options":{"pitch":"+10Hz","volume":"-10%"}}'
 ```
+
+### `kokoro` — local neural TTS
+
+`kokoro` runs a small (~82M param) neural model locally through ONNX Runtime —
+fully offline, better prosody than Piper. After `pip install 'tts-daemon[kokoro]'`
+download the two artifacts from the
+[kokoro-onnx releases](https://github.com/thewh1teagle/kokoro-onnx/releases)
+into `~/.local/share/tts-daemon/kokoro/` (or point the config at them):
+
+- `kokoro-v1.0.onnx` (the model)
+- `voices-v1.0.bin` (the voice pack)
+
+```yaml
+providers:
+  kokoro:
+    model_path: ~/.local/share/tts-daemon/kokoro/kokoro-v1.0.onnx
+    voices_path: ~/.local/share/tts-daemon/kokoro/voices-v1.0.bin
+    default_voice: af_sarah
+```
+
+`tts-daemon providers` tells you exactly which piece is missing (package, model,
+or voices file) with the download link.

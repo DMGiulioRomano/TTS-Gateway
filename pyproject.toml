@@ -43,6 +43,10 @@ dev = [
 edge = [
     "edge-tts>=6.1",
 ]
+# Local high-quality neural TTS via ONNX Runtime; see providers/kokoro.py.
+kokoro = [
+    "kokoro-onnx>=0.3",
+]
 
 [project.urls]
 Homepage = "https://github.com/DMGiulioRomano/TTS-Daemon"
@@ -57,6 +61,7 @@ tts-daemon = "tts_daemon.cli:main"
 piper = "tts_daemon.providers.piper:PiperProvider"
 tone = "tts_daemon.providers.tone:ToneProvider"
 edge = "tts_daemon.providers.edge:EdgeProvider"
+kokoro = "tts_daemon.providers.kokoro:KokoroProvider"
 
 [tool.setuptools.packages.find]
 where = ["src"]

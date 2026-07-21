@@ -8,6 +8,12 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **Kokoro provider** (#16): local high-quality neural TTS via `kokoro-onnx`
+  (ONNX Runtime, CPU-friendly). Optional extra `pip install 'tts-daemon[kokoro]'`,
+  lazily imported; `availability()` distinguishes package / model-file /
+  voices-file problems with the exact download hint; lists bundled voices, maps
+  `speed`, and outputs WAV. The float→WAV packing shared by `tone` and `kokoro`
+  moved to `core/audio.py`.
 - **Web playground at `/`** (#9): the root page is now an interactive,
   build-step-free playground (single static HTML file, inline CSS/JS, no
   external requests, dark/light aware). Type text, choose provider/voice

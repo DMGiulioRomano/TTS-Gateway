@@ -16,11 +16,9 @@ realistically.
 
 from __future__ import annotations
 
-import io
 import math
-import struct
-import wave
 
+from tts_daemon.core.audio import float_pcm16_wav
 from tts_daemon.core.errors import SynthesisError
 from tts_daemon.core.interfaces import TTSProvider
 from tts_daemon.core.models import AudioClip, AudioFormat, SynthesisRequest, Voice
@@ -69,7 +67,7 @@ class ToneProvider(TTSProvider):
             samples.extend(_beep(frequency, beep_seconds))
             samples.extend([0.0] * int(SAMPLE_RATE * gap_seconds))
 
-        return AudioClip(data=_to_wav(samples), format=AudioFormat.WAV)
+        return AudioClip(data=float_pcm16_wav(samples, SAMPLE_RATE), format=AudioFormat.WAV)
 
     def voices(self) -> list[Voice]:
         return [
@@ -96,18 +94,3 @@ def _beep(frequency: float, seconds: float) -> list[float]:
             value *= (total - 1 - i) / fade
         samples.append(value)
     return samples
-
-
-def _to_wav(samples: list[float]) -> bytes:
-    """Pack float samples in [-1, 1] into a mono 16-bit PCM WAV file."""
-    buffer = io.BytesIO()
-    with wave.open(buffer, "wb") as wav:
-        wav.setnchannels(1)
-        wav.setsampwidth(2)
-        wav.setframerate(SAMPLE_RATE)
-        frames = bytearray()
-        for sample in samples:
-            clamped = max(-1.0, min(1.0, sample))
-            frames += struct.pack("<h", int(clamped * 32767))
-        wav.writeframes(bytes(frames))
-    return buffer.getvalue()
