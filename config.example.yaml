@@ -26,6 +26,11 @@ playback:
                          # "{file}" is replaced with a temp audio file; without
                          # it, audio bytes are piped to the command's stdin.
 
+cache:
+  enabled: true          # cache synthesized clips so repeated phrases replay instantly
+  max_mb: 200            # size budget; least-recently-used clips are evicted
+  dir: null              # storage dir; default: $XDG_CACHE_HOME/tts-daemon (~/.cache/...)
+
 logging:
   level: INFO
 

@@ -151,6 +151,20 @@ class PiperProvider(TTSProvider):
             )
         return voices
 
+    def synthesis_fingerprint(self, request: SynthesisRequest) -> str:
+        """Fold the resolved model file's mtime into the cache key.
+
+        Swapping a voice model in place (same name, new file) must invalidate
+        any cached clips synthesized from the old one. Best-effort: if the
+        model cannot be resolved yet, fall back to the provider name so
+        caching still works with a coarser key.
+        """
+        try:
+            model_path = self._resolve_model(request.voice)
+            return f"piper:{model_path}:{model_path.stat().st_mtime_ns}"
+        except (SynthesisError, OSError):
+            return self.name
+
     def availability(self) -> Availability:
         if shutil.which(self._binary) is None:
             return Availability.unavailable(

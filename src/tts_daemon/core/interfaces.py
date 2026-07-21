@@ -57,6 +57,18 @@ class TTSProvider(ABC):
         """
         return Availability.ok()
 
+    def synthesis_fingerprint(self, request: SynthesisRequest) -> str:
+        """A token folded into the synthesis-cache key for this request.
+
+        Return anything that changes the audio but is *not* part of the
+        request itself — a voice-model file's mtime, an engine version — so
+        that a swapped model or upgraded engine invalidates cached clips
+        automatically. The default (the provider name) is enough for engines
+        whose output depends only on the request. Must never raise; return a
+        best-effort value on error.
+        """
+        return self.name
+
     def close(self) -> None:  # noqa: B027 - optional hook, a no-op default is the contract
         """Release resources (subprocesses, HTTP sessions). Idempotent."""
 

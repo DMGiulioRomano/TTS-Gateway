@@ -101,12 +101,15 @@ Cancel every queued utterance and interrupt the one playing.
   },
   "default_provider": "piper",
   "default_provider_error": null,
-  "playback_available": true
+  "playback_available": true,
+  "cache": { "entries": 12, "size_mb": 3.4, "hits": 87, "misses": 20 }
 }
 ```
 
 `default_provider` is the *resolved* default (what `auto` picked); when
 nothing is available it is `null` and `default_provider_error` explains why.
+`cache` reports the synthesis cache (`hits`/`misses` count since the server
+started) and is `null` when the cache is disabled (`cache.enabled: false`).
 
 ## `GET /v1/utterances/{id}`
 

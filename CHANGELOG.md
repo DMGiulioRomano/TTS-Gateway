@@ -14,6 +14,14 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   emits a `: ping` heartbeat every ~15 s, and reuses the WebSocket's
   snapshot/slow-consumer semantics. The thread→asyncio event bridge is now a
   shared `api/event_bridge.py` helper used by both the WebSocket and SSE.
+- **On-disk synthesis cache**: repeated phrases replay instantly instead of
+  re-synthesizing. A size-bounded LRU store under `$XDG_CACHE_HOME/tts-daemon`
+  keyed by provider, voice, speed, options, text, and a provider fingerprint
+  (piper folds in the voice model's mtime so a swapped model invalidates
+  cached clips). New `cache` config section (`enabled`, `max_mb`, `dir`; on by
+  default), per-request `no_cache` option to bypass, and cache stats
+  (`entries`, `size_mb`, `hits`, `misses`) in `GET /v1/status`. Atomic writes
+  and corruption-tolerant (a broken cache is a miss, never an error).
 
 ## [0.1.0] - 2026-07-21
 

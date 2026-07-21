@@ -7,10 +7,13 @@ the playback queue, and shutdown. Nothing here knows about FastAPI.
 
 from __future__ import annotations
 
+import dataclasses
 import logging
+from pathlib import Path
 from typing import Any
 
 from tts_daemon.config import GatewayConfig
+from tts_daemon.core.cache import SynthesisCache, cache_key, default_cache_dir
 from tts_daemon.core.errors import ProviderUnavailableError
 from tts_daemon.core.events import EventBus
 from tts_daemon.core.interfaces import AudioPlayer, TTSProvider
@@ -21,6 +24,10 @@ from tts_daemon.providers.registry import ProviderRegistry
 logger = logging.getLogger(__name__)
 
 AUTO_PROVIDER = "auto"
+
+#: Per-request option that bypasses the synthesis cache (stripped by the
+#: gateway before the request reaches a provider).
+NO_CACHE_OPTION = "no_cache"
 
 
 class SpeechService:
@@ -43,7 +50,16 @@ class SpeechService:
             max_size=config.speech.queue_size,
             history_size=config.speech.history_size,
         )
+        self._cache = self._build_cache(config)
         self._closed = False
+
+    @staticmethod
+    def _build_cache(config: GatewayConfig) -> SynthesisCache | None:
+        cache_config = config.cache
+        if not cache_config.enabled or cache_config.max_mb <= 0:
+            return None
+        directory = Path(cache_config.dir).expanduser() if cache_config.dir else default_cache_dir()
+        return SynthesisCache(directory, max_bytes=cache_config.max_mb * 1024 * 1024)
 
     @property
     def registry(self) -> ProviderRegistry:
@@ -75,7 +91,7 @@ class SpeechService:
         utterance = Utterance(request, chosen.name)
         if interrupt:
             self._queue.clear()
-        self._queue.submit(utterance, lambda: chosen.synthesize(request))
+        self._queue.submit(utterance, lambda: self._synthesize_cached(chosen, request))
         return utterance
 
     def synthesize(
@@ -89,7 +105,35 @@ class SpeechService:
     ) -> AudioClip:
         """Synthesize and return audio without queueing or playing it."""
         request = self._build_request(text, voice=voice, speed=speed, options=options)
-        return self.resolve_provider(provider).synthesize(request)
+        return self._synthesize_cached(self.resolve_provider(provider), request)
+
+    def _synthesize_cached(self, provider: TTSProvider, request: SynthesisRequest) -> AudioClip:
+        """Synthesize ``request`` with ``provider``, consulting the clip cache.
+
+        The gateway-level ``no_cache`` option is always stripped here (so a
+        provider never sees it and rejects the request as an unknown option),
+        whether or not the cache is enabled.
+        """
+        bypass = False
+        if NO_CACHE_OPTION in request.options:
+            options = dict(request.options)
+            bypass = bool(options.pop(NO_CACHE_OPTION))
+            request = dataclasses.replace(request, options=options)
+
+        if self._cache is None or bypass:
+            return provider.synthesize(request)
+
+        key = cache_key(
+            provider=provider.name,
+            fingerprint=provider.synthesis_fingerprint(request),
+            request=request,
+        )
+        cached = self._cache.get(key)
+        if cached is not None:
+            return cached
+        clip = provider.synthesize(request)
+        self._cache.put(key, clip)
+        return clip
 
     def stop(self) -> int:
         """Cancel pending speech and interrupt playback; returns count affected."""
@@ -108,6 +152,7 @@ class SpeechService:
             "default_provider": default_name,
             "default_provider_error": default_error,
             "playback_available": self._player.availability().available,
+            "cache": self._cache.stats() if self._cache is not None else None,
         }
 
     def find_utterance(self, utterance_id: str) -> dict[str, Any] | None:
