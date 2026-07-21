@@ -1,6 +1,6 @@
 # Examples
 
-All examples expect a running gateway (`tts-gateway serve`).
+All examples expect a running gateway (`tts-daemon serve`).
 
 | File                                             | Shows                                                     |
 | ------------------------------------------------ | --------------------------------------------------------- |
@@ -19,10 +19,10 @@ Quick shell aliases you may enjoy:
 
 ```sh
 # say — speak from the terminal:  say "build finished"
-say() { tts-gateway speak "$*"; }
+say() { tts-daemon speak "$*"; }
 
 # hush — stop speaking immediately
-alias hush='tts-gateway stop'
+alias hush='tts-daemon stop'
 
 # speak the result of any long command:  make test; say "exit $?"
 ```

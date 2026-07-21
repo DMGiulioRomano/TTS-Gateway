@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from tts_gateway.core.events import Event, EventBus
+from tts_daemon.core.events import Event, EventBus
 
 
 def test_publish_delivers_payload_and_timestamp() -> None:

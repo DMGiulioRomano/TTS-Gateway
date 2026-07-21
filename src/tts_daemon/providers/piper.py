@@ -11,8 +11,8 @@ Settings (``providers.piper`` in the config file):
     Executable name or path (default ``piper``).
 ``models_dir``
     Directory scanned for ``*.onnx`` voice models. Defaults to
-    ``$XDG_DATA_HOME/tts-gateway/piper`` (usually
-    ``~/.local/share/tts-gateway/piper``).
+    ``$XDG_DATA_HOME/tts-daemon/piper`` (usually
+    ``~/.local/share/tts-daemon/piper``).
 ``default_voice``
     Voice used when a request names none: a model file stem
     (``en_US-lessac-medium``) or a path to an ``.onnx`` file. Defaults to the
@@ -42,9 +42,9 @@ from json import JSONDecodeError
 from json import loads as json_loads
 from pathlib import Path
 
-from tts_gateway.core.errors import SynthesisError
-from tts_gateway.core.interfaces import TTSProvider
-from tts_gateway.core.models import AudioClip, AudioFormat, Availability, SynthesisRequest, Voice
+from tts_daemon.core.errors import SynthesisError
+from tts_daemon.core.interfaces import TTSProvider
+from tts_daemon.core.models import AudioClip, AudioFormat, Availability, SynthesisRequest, Voice
 
 logger = logging.getLogger(__name__)
 
@@ -52,10 +52,10 @@ _STDERR_TAIL_CHARS = 500  # how much of piper's stderr to include in errors
 
 
 def default_models_dir() -> Path:
-    """``$XDG_DATA_HOME/tts-gateway/piper`` with the ``~/.local/share`` fallback."""
+    """``$XDG_DATA_HOME/tts-daemon/piper`` with the ``~/.local/share`` fallback."""
     xdg = os.environ.get("XDG_DATA_HOME", "").strip()
     base = Path(xdg) if xdg else Path.home() / ".local" / "share"
-    return base / "tts-gateway" / "piper"
+    return base / "tts-daemon" / "piper"
 
 
 class PiperProvider(TTSProvider):
@@ -99,7 +99,7 @@ class PiperProvider(TTSProvider):
 
         command += self._extra_args
 
-        with tempfile.TemporaryDirectory(prefix="tts-gateway-piper-") as tmp:
+        with tempfile.TemporaryDirectory(prefix="tts-daemon-piper-") as tmp:
             output_path = Path(tmp) / "out.wav"
             command += ["--output_file", str(output_path)]
             logger.debug("Running piper: %s", " ".join(command))

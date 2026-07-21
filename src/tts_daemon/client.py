@@ -1,7 +1,7 @@
 """A tiny HTTP client for a running gateway, built on the standard library.
 
 Used by the CLI and handy for scripts; it needs nothing beyond Python
-itself, so ``tts-gateway speak "hi"`` works in any environment that can
+itself, so ``tts-daemon speak "hi"`` works in any environment that can
 reach the server -- including ones where the server's dependencies are not
 installed.
 """
@@ -14,7 +14,7 @@ import urllib.parse
 import urllib.request
 from typing import Any
 
-from tts_gateway.defaults import DEFAULT_BASE_URL
+from tts_daemon.defaults import DEFAULT_BASE_URL
 
 
 class GatewayClientError(Exception):
@@ -124,7 +124,7 @@ class GatewayClient:
         except urllib.error.URLError as exc:
             raise GatewayClientError(
                 f"Cannot reach the gateway at {self.base_url}: {exc.reason}. "
-                "Is it running? Start it with: tts-gateway serve"
+                "Is it running? Start it with: tts-daemon serve"
             ) from exc
 
 

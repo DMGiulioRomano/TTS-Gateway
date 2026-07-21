@@ -13,7 +13,7 @@ import anyio.to_thread
 from fastapi import APIRouter, Query, Request, Response
 from fastapi.responses import JSONResponse
 
-from tts_gateway.api.schemas import (
+from tts_daemon.api.schemas import (
     ErrorResponse,
     ProvidersResponse,
     SpeakRequest,
@@ -23,7 +23,7 @@ from tts_gateway.api.schemas import (
     SynthesizeRequest,
     VoicesResponse,
 )
-from tts_gateway.core.service import SpeechService
+from tts_daemon.core.service import SpeechService
 
 router = APIRouter()
 

@@ -5,10 +5,10 @@ from __future__ import annotations
 import pytest
 
 from tests.conftest import ControllablePlayer, make_clip
-from tts_gateway.core.errors import PlaybackError, QueueFullError, SynthesisError
-from tts_gateway.core.events import EventBus
-from tts_gateway.core.models import SynthesisRequest, Utterance, UtteranceState
-from tts_gateway.core.queue import PlaybackQueue
+from tts_daemon.core.errors import PlaybackError, QueueFullError, SynthesisError
+from tts_daemon.core.events import EventBus
+from tts_daemon.core.models import SynthesisRequest, Utterance, UtteranceState
+from tts_daemon.core.queue import PlaybackQueue
 
 
 @pytest.fixture()

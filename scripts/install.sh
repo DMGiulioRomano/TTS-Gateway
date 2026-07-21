@@ -1,10 +1,10 @@
 #!/bin/sh
-# One-line installer for tts-gateway:
-#   curl -fsSL https://raw.githubusercontent.com/DMGiulioRomano/TTS-Gateway/main/scripts/install.sh | sh
+# One-line installer for tts-daemon:
+#   curl -fsSL https://raw.githubusercontent.com/DMGiulioRomano/TTS-Daemon/main/scripts/install.sh | sh
 #
 # Prefers pipx (isolated install); falls back to `pip install --user`.
 # The PyPI distribution is named `tts-daemon`; the command it installs
-# is `tts-gateway`.
+# is `tts-daemon`.
 set -eu
 
 PKG=tts-daemon
@@ -21,4 +21,4 @@ else
     exit 1
 fi
 
-echo ">> done. Try:  tts-gateway serve"
+echo ">> done. Try:  tts-daemon serve"

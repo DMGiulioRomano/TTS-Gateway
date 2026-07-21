@@ -1,14 +1,14 @@
 # Browser userscript
 
-Read any selected text aloud through your local tts-gateway, on any website.
+Read any selected text aloud through your local tts-daemon, on any website.
 
 ## Install
 
 1. Install a userscript manager: [Violentmonkey](https://violentmonkey.github.io/),
    [Tampermonkey](https://www.tampermonkey.net/), or Greasemonkey.
-2. Open [`tts-gateway.user.js`](./tts-gateway.user.js) in the manager
+2. Open [`tts-daemon.user.js`](./tts-daemon.user.js) in the manager
    (usually: click the raw file, the manager offers to install it).
-3. Make sure the gateway is running: `tts-gateway serve`.
+3. Make sure the gateway is running: `tts-daemon serve`.
 
 ## Use
 

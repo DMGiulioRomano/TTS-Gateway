@@ -4,12 +4,12 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "tts-daemon"
-version = "0.2.0"
+version = "0.1.0"
 description = "Local HTTP/WebSocket Text-to-Speech gateway with pluggable providers (Piper first)."
 readme = "README.md"
 license = { text = "MIT" }
 requires-python = ">=3.10"
-authors = [{ name = "TTS Gateway contributors" }]
+authors = [{ name = "TTS Daemon contributors" }]
 keywords = ["tts", "text-to-speech", "piper", "speech", "gateway", "fastapi"]
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -41,17 +41,17 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/DMGiulioRomano/TTS-Gateway"
-Documentation = "https://github.com/DMGiulioRomano/TTS-Gateway/tree/main/docs"
-Issues = "https://github.com/DMGiulioRomano/TTS-Gateway/issues"
-Changelog = "https://github.com/DMGiulioRomano/TTS-Gateway/blob/main/CHANGELOG.md"
+Homepage = "https://github.com/DMGiulioRomano/TTS-Daemon"
+Documentation = "https://github.com/DMGiulioRomano/TTS-Daemon/tree/main/docs"
+Issues = "https://github.com/DMGiulioRomano/TTS-Daemon/issues"
+Changelog = "https://github.com/DMGiulioRomano/TTS-Daemon/blob/main/CHANGELOG.md"
 
 [project.scripts]
-tts-gateway = "tts_gateway.cli:main"
+tts-daemon = "tts_daemon.cli:main"
 
-[project.entry-points."tts_gateway.providers"]
-piper = "tts_gateway.providers.piper:PiperProvider"
-tone = "tts_gateway.providers.tone:ToneProvider"
+[project.entry-points."tts_daemon.providers"]
+piper = "tts_daemon.providers.piper:PiperProvider"
+tone = "tts_daemon.providers.tone:ToneProvider"
 
 [tool.setuptools.packages.find]
 where = ["src"]
@@ -59,7 +59,7 @@ where = ["src"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q"
-filterwarnings = ["error::DeprecationWarning:tts_gateway.*"]
+filterwarnings = ["error::DeprecationWarning:tts_daemon.*"]
 
 [tool.ruff]
 line-length = 100

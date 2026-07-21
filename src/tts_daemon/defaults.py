@@ -1,6 +1,6 @@
 """Default network location of the gateway.
 
-Lives in its own dependency-free module so that :mod:`tts_gateway.client`
+Lives in its own dependency-free module so that :mod:`tts_daemon.client`
 (and anyone vendoring it) can import the defaults without pulling in the
 server's dependencies.
 """

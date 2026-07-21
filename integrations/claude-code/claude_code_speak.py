@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Claude Code hook: speak Claude's replies and notifications via tts-gateway.
+"""Claude Code hook: speak Claude's replies and notifications via tts-daemon.
 
 Standard library only; drop it anywhere and point your hooks at it.
 
@@ -10,10 +10,10 @@ Code sends the hook payload as JSON on stdin.
 
 Environment overrides:
 
-- ``TTS_GATEWAY_URL``            gateway base URL (default http://127.0.0.1:5111)
-- ``TTS_GATEWAY_SPEAK_MAX_CHARS`` truncation limit for replies (default 400)
-- ``TTS_GATEWAY_SPEAK_PROVIDER`` / ``TTS_GATEWAY_SPEAK_VOICE`` /
-  ``TTS_GATEWAY_SPEAK_SPEED``    forwarded to the gateway when set
+- ``TTS_DAEMON_URL``            gateway base URL (default http://127.0.0.1:5111)
+- ``TTS_DAEMON_SPEAK_MAX_CHARS`` truncation limit for replies (default 400)
+- ``TTS_DAEMON_SPEAK_PROVIDER`` / ``TTS_DAEMON_SPEAK_VOICE`` /
+  ``TTS_DAEMON_SPEAK_SPEED``    forwarded to the gateway when set
 
 The script never fails the hook: on any problem (gateway down, malformed
 payload) it exits 0 silently, because speech must never break a coding
@@ -103,7 +103,7 @@ def prepare(text: str) -> str:
     text = re.sub(r"^\s*[-*+]\s+", "", text, flags=re.MULTILINE)  # bullets
     text = re.sub(r"\s+", " ", text).strip()
 
-    limit = _int_env("TTS_GATEWAY_SPEAK_MAX_CHARS", DEFAULT_MAX_CHARS)
+    limit = _int_env("TTS_DAEMON_SPEAK_MAX_CHARS", DEFAULT_MAX_CHARS)
     if limit > 0 and len(text) > limit:
         cut = text[:limit]
         # avoid stopping mid-word when there is a recent space to cut at
@@ -115,19 +115,19 @@ def prepare(text: str) -> str:
 
 def speak(text: str) -> None:
     body: dict[str, object] = {"text": text, "interrupt": True}
-    provider = os.environ.get("TTS_GATEWAY_SPEAK_PROVIDER")
-    voice = os.environ.get("TTS_GATEWAY_SPEAK_VOICE")
+    provider = os.environ.get("TTS_DAEMON_SPEAK_PROVIDER")
+    voice = os.environ.get("TTS_DAEMON_SPEAK_VOICE")
     if provider:
         body["provider"] = provider
     if voice:
         body["voice"] = voice
-    speed = os.environ.get("TTS_GATEWAY_SPEAK_SPEED")
+    speed = os.environ.get("TTS_DAEMON_SPEAK_SPEED")
     if speed:
         try:
             body["speed"] = float(speed)
         except ValueError:
             pass
-    url = os.environ.get("TTS_GATEWAY_URL", DEFAULT_URL).rstrip("/") + "/v1/speak"
+    url = os.environ.get("TTS_DAEMON_URL", DEFAULT_URL).rstrip("/") + "/v1/speak"
     request = urllib.request.Request(
         url,
         data=json.dumps(body).encode("utf-8"),

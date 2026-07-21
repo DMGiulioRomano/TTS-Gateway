@@ -1,9 +1,9 @@
-# tts-gateway configuration.
-# Default location: ~/.config/tts-gateway/config.yaml
+# tts-daemon configuration.
+# Default location: ~/.config/tts-daemon/config.yaml
 # Every key is optional; the values shown here are the built-in defaults
 # unless noted otherwise. Environment variables override this file, e.g.
-#   TTS_GATEWAY__SERVER__PORT=6000
-#   TTS_GATEWAY__PROVIDERS__PIPER__MODELS_DIR=/opt/voices
+#   TTS_DAEMON__SERVER__PORT=6000
+#   TTS_DAEMON__PROVIDERS__PIPER__MODELS_DIR=/opt/voices
 
 server:
   host: 127.0.0.1        # bind address; keep on localhost unless you trust the network
@@ -32,7 +32,7 @@ logging:
 providers:
   piper:
     binary: piper        # path to the piper executable
-    models_dir: null     # where *.onnx voices live; default: ~/.local/share/tts-gateway/piper
+    models_dir: null     # where *.onnx voices live; default: ~/.local/share/tts-daemon/piper
     default_voice: null  # model name (without .onnx) or full path; default: first model found
     extra_args: []       # appended verbatim to the piper command line
   tone: {}               # dependency-free beep provider; no settings

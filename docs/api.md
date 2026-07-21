@@ -195,7 +195,7 @@ oldest events dropped rather than stalling playback (buffer: 256 events).
 
 ## Client libraries
 
-- Python (stdlib-only, bundled): `tts_gateway.client.GatewayClient` — see
+- Python (stdlib-only, bundled): `tts_daemon.client.GatewayClient` — see
   [examples/python_client.py](../examples/python_client.py).
 - Any language: it's plain JSON over HTTP; [examples/curl.sh](../examples/curl.sh)
   shows every endpoint.

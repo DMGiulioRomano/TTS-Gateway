@@ -1,13 +1,13 @@
 # Contributing
 
-Thanks for helping make tts-gateway better. This project values small,
+Thanks for helping make tts-daemon better. This project values small,
 well-tested changes with clear reasoning.
 
 ## Quick start
 
 ```sh
-git clone https://github.com/DMGiulioRomano/TTS-Gateway.git
-cd TTS-Gateway
+git clone https://github.com/DMGiulioRomano/TTS-Daemon.git
+cd TTS-Daemon
 python3 -m venv .venv && source .venv/bin/activate
 pip install -e '.[dev]'
 make check        # lint + full test suite — must pass before and after your change
@@ -52,9 +52,9 @@ open an issue first so the design can be discussed before you invest time.
 ## Reporting bugs
 
 Open an issue with: what you did, what you expected, what happened, plus
-your OS, Python version, `tts-gateway --version`, and relevant server log
+your OS, Python version, `tts-daemon --version`, and relevant server log
 lines (`logging.level: DEBUG` helps). For provider problems, include
-`tts-gateway providers` output.
+`tts-daemon providers` output.
 
 ## Security
 

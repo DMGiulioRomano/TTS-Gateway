@@ -4,7 +4,7 @@
 #
 #     vhs assets/demo.tape
 #
-# Requirements: vhs on PATH, tts-gateway installed (the demo uses the
+# Requirements: vhs on PATH, tts-daemon installed (the demo uses the
 # dependency-free tone provider, so no TTS engine is needed).
 
 Output assets/demo.gif
@@ -18,22 +18,22 @@ Set TypingSpeed 40ms
 
 # Start the server quietly in the background, then present a clean prompt.
 Hide
-Type "tts-gateway serve > /tmp/tts-gateway-demo.log 2>&1 &"
+Type "tts-daemon serve > /tmp/tts-daemon-demo.log 2>&1 &"
 Enter
 Sleep 2s
 Type "clear"
 Enter
 Show
 
-Type `tts-gateway speak "Hello! I am your local text to speech gateway."`
+Type `tts-daemon speak "Hello! I am your local text to speech gateway."`
 Enter
 Sleep 2.5s
 
-Type `tts-gateway speak --interrupt "Stop everything — this one is more important."`
+Type `tts-daemon speak --interrupt "Stop everything — this one is more important."`
 Enter
 Sleep 2.5s
 
-Type "tts-gateway status"
+Type "tts-daemon status"
 Enter
 Sleep 3s
 

@@ -1,8 +1,8 @@
 #!/bin/sh
-# tts-gateway REST API tour, in curl. Run a gateway first: tts-gateway serve
+# tts-daemon REST API tour, in curl. Run a gateway first: tts-daemon serve
 set -e
 
-GATEWAY="${TTS_GATEWAY_URL:-http://127.0.0.1:5111}"
+GATEWAY="${TTS_DAEMON_URL:-http://127.0.0.1:5111}"
 
 say() { printf '\n== %s\n' "$*"; }
 

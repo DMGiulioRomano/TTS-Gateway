@@ -16,9 +16,9 @@ from types import SimpleNamespace
 import pytest
 
 from tests.conftest import make_clip
-from tts_gateway.core.errors import SynthesisError
-from tts_gateway.core.models import SynthesisRequest
-from tts_gateway.providers.piper import PiperProvider, default_models_dir
+from tts_daemon.core.errors import SynthesisError
+from tts_daemon.core.models import SynthesisRequest
+from tts_daemon.providers.piper import PiperProvider, default_models_dir
 
 pytestmark = pytest.mark.skipif(sys.platform == "win32", reason="fake piper is a POSIX script")
 
@@ -108,7 +108,7 @@ class TestAvailability:
         assert provider.availability().available
 
     def test_default_models_dir_location(self) -> None:
-        assert str(default_models_dir()).endswith(os.path.join("tts-gateway", "piper"))
+        assert str(default_models_dir()).endswith(os.path.join("tts-daemon", "piper"))
 
 
 class TestSynthesis:

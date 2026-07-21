@@ -3,7 +3,7 @@
 The queue worker publishes utterance lifecycle events from its own thread;
 subscribers (WebSocket bridges, tests, log sinks) receive them synchronously
 on that thread. Subscribers that need to hop threads or event loops do so
-themselves (see ``tts_gateway.api.websocket``), which keeps this module free
+themselves (see ``tts_daemon.api.websocket``), which keeps this module free
 of asyncio.
 """
 

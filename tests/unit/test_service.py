@@ -10,13 +10,13 @@ from tests.conftest import (
     UnavailableProvider,
     make_config,
 )
-from tts_gateway.core.errors import ProviderUnavailableError, UnknownProviderError
-from tts_gateway.core.events import EventBus
-from tts_gateway.core.models import UtteranceState
-from tts_gateway.core.service import SpeechService
-from tts_gateway.players.null import NullPlayer
-from tts_gateway.providers.registry import ProviderRegistry
-from tts_gateway.providers.tone import ToneProvider
+from tts_daemon.core.errors import ProviderUnavailableError, UnknownProviderError
+from tts_daemon.core.events import EventBus
+from tts_daemon.core.models import UtteranceState
+from tts_daemon.core.service import SpeechService
+from tts_daemon.players.null import NullPlayer
+from tts_daemon.providers.registry import ProviderRegistry
+from tts_daemon.providers.tone import ToneProvider
 
 
 def build_service(

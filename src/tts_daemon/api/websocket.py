@@ -37,10 +37,10 @@ from typing import Any
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from pydantic import ValidationError
 
-from tts_gateway.api.schemas import SpeakRequest
-from tts_gateway.core.errors import GatewayError
-from tts_gateway.core.events import Event
-from tts_gateway.core.service import SpeechService
+from tts_daemon.api.schemas import SpeakRequest
+from tts_daemon.core.errors import GatewayError
+from tts_daemon.core.events import Event
+from tts_daemon.core.service import SpeechService
 
 logger = logging.getLogger(__name__)
 
