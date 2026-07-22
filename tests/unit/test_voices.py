@@ -8,6 +8,7 @@ hermetic pattern the project requires for download code.
 from __future__ import annotations
 
 import functools
+import hashlib
 import http.server
 import json
 import threading
@@ -44,7 +45,13 @@ def _write(root: Path, rel_path: str, data: bytes) -> None:
     dest.write_bytes(data)
 
 
-def _build_repo(root: Path, *, en_onnx_declared: int | None = None) -> None:
+def _md5(data: bytes) -> str:
+    return hashlib.md5(data, usedforsecurity=False).hexdigest()
+
+
+def _build_repo(
+    root: Path, *, en_onnx_declared: int | None = None, en_onnx_md5: str | None = None
+) -> None:
     """Write a fake piper-voices tree under ``root`` (files + voices.json)."""
     _write(root, EN_ONNX_PATH, EN_ONNX)
     _write(root, f"{EN_ONNX_PATH}.json", EN_JSON)
@@ -60,8 +67,14 @@ def _build_repo(root: Path, *, en_onnx_declared: int | None = None) -> None:
             "quality": "medium",
             "num_speakers": 1,
             "files": {
-                EN_ONNX_PATH: {"size_bytes": en_size},
-                f"{EN_ONNX_PATH}.json": {"size_bytes": len(EN_JSON)},
+                EN_ONNX_PATH: {
+                    "size_bytes": en_size,
+                    "md5_digest": en_onnx_md5 or _md5(EN_ONNX),
+                },
+                f"{EN_ONNX_PATH}.json": {
+                    "size_bytes": len(EN_JSON),
+                    "md5_digest": _md5(EN_JSON),
+                },
                 "en/en_US/lessac/medium/MODEL_CARD": {"size_bytes": 42},
             },
         },
@@ -71,6 +84,8 @@ def _build_repo(root: Path, *, en_onnx_declared: int | None = None) -> None:
             "quality": "x_low",
             "num_speakers": 1,
             "files": {
+                # No md5 here: the manifest is not guaranteed to carry one, and
+                # a voice without a digest must still be downloadable.
                 IT_ONNX_PATH: {"size_bytes": len(IT_ONNX)},
                 f"{IT_ONNX_PATH}.json": {"size_bytes": len(IT_JSON)},
             },
@@ -106,6 +121,26 @@ def catalog(server: SimpleNamespace) -> VoiceCatalog:
 
 
 class TestParseCatalog:
+    @pytest.mark.parametrize(
+        "digest, expected",
+        [
+            ("A" * 32, "a" * 32),  # normalized to lower case
+            ("abc", None),  # too short
+            ("z" * 32, None),  # not hexadecimal
+            (12345, None),  # not a string
+        ],
+    )
+    def test_md5_digest_is_validated(self, digest: object, expected: str | None) -> None:
+        manifest = {
+            "a-b-c": {
+                "files": {
+                    "x/a-b-c.onnx": {"size_bytes": 10, "md5_digest": digest},
+                    "x/a-b-c.onnx.json": {"size_bytes": 3},
+                },
+            }
+        }
+        assert parse_catalog(manifest)["a-b-c"].onnx_md5 == expected
+
     def test_pairs_onnx_and_config(self) -> None:
         manifest = {
             "a-b-c": {
@@ -237,6 +272,34 @@ class TestVerification:
         finally:
             httpd.shutdown()
             thread.join()
+
+    def test_checksum_mismatch_is_rejected(self, tmp_path: Path) -> None:
+        # Right length, wrong bytes: only the digest can catch this, so a
+        # corrupted-in-transit model never reaches the models dir.
+        root = tmp_path / "repo"
+        root.mkdir()
+        _build_repo(root, en_onnx_md5="0" * 32)
+        base_url, httpd, thread = _serve(root)
+        try:
+            catalog = VoiceCatalog(base_url, timeout=5.0)
+            models_dir = tmp_path / "models"
+            with pytest.raises(VoiceCatalogError, match="checksum mismatch"):
+                catalog.download("en_US-lessac-medium", models_dir)
+            assert list(models_dir.glob("*.part")) == []
+            assert not (models_dir / "en_US-lessac-medium.onnx").exists()
+        finally:
+            httpd.shutdown()
+            thread.join()
+
+    def test_voice_without_digest_still_downloads(
+        self, catalog: VoiceCatalog, tmp_path: Path
+    ) -> None:
+        # The italian entry carries no md5_digest; verification must be skipped,
+        # not treated as a mismatch.
+        models_dir = tmp_path / "models"
+        result = catalog.download("it_IT-riccardo-x_low", models_dir)
+        assert (models_dir / "it_IT-riccardo-x_low.onnx").read_bytes() == IT_ONNX
+        assert len(result.downloaded) == 2
 
 
 class TestOffline:

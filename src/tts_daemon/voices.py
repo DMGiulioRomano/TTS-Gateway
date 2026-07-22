@@ -6,15 +6,17 @@ imports FastAPI or the gateway internals.
 
 The catalog is the ``voices.json`` manifest published under the Hugging Face
 repo ``rhasspy/piper-voices``; each voice lists its ``.onnx`` model and the
-``.onnx.json`` config, with per-file sizes. Files are resolved under the same
-repo. Downloads stream to a ``*.part`` sidecar and are renamed into place only
-after the byte count is verified, so an interrupted download never leaves a
-half-written model that Piper would choke on.
+``.onnx.json`` config, with a size and an md5 digest per file. Files are
+resolved under the same repo. Downloads stream to a ``*.part`` sidecar and are
+renamed into place only once the byte count and the digest both check out, so
+an interrupted or corrupted download never leaves a half-written model that
+Piper would choke on.
 """
 
 from __future__ import annotations
 
 import difflib
+import hashlib
 import http.client
 import json
 import urllib.error
@@ -51,6 +53,8 @@ class VoiceInfo:
     config_path: str
     onnx_size: int = 0
     config_size: int = 0
+    onnx_md5: str | None = None
+    config_md5: str | None = None
 
     @property
     def size_bytes(self) -> int:
@@ -81,6 +85,16 @@ def _as_int(value: object, default: int = 0) -> int:
         return int(value)  # type: ignore[arg-type]
     except (TypeError, ValueError):
         return default
+
+
+def _as_md5(value: object) -> str | None:
+    """A 32-hex-digit digest from the manifest, or None if absent/malformed."""
+    if not isinstance(value, str):
+        return None
+    digest = value.strip().lower()
+    if len(digest) != 32 or any(char not in "0123456789abcdef" for char in digest):
+        return None
+    return digest
 
 
 def _language_code(block: object) -> str | None:
@@ -128,6 +142,8 @@ def parse_catalog(manifest: dict[str, Any]) -> dict[str, VoiceInfo]:
             config_path=config_path,
             onnx_size=_as_int(files.get(onnx_path, {}).get("size_bytes")),
             config_size=_as_int(files.get(config_path, {}).get("size_bytes")),
+            onnx_md5=_as_md5(files.get(onnx_path, {}).get("md5_digest")),
+            config_md5=_as_md5(files.get(config_path, {}).get("md5_digest")),
         )
     return catalog
 
@@ -213,18 +229,22 @@ class VoiceCatalog:
         directory.mkdir(parents=True, exist_ok=True)
 
         specs = (
-            (info.onnx_path, f"{info.id}.onnx", info.onnx_size),
-            (info.config_path, f"{info.id}.onnx.json", info.config_size),
+            (info.onnx_path, f"{info.id}.onnx", info.onnx_size, info.onnx_md5),
+            (info.config_path, f"{info.id}.onnx.json", info.config_size, info.config_md5),
         )
         paths: list[Path] = []
         downloaded: list[Path] = []
-        for remote_path, name, size in specs:
+        for remote_path, name, size, md5 in specs:
             dest = directory / name
             paths.append(dest)
             if dest.is_file() and not force:
                 continue
             self._download_file(
-                f"{self.base_url}/{remote_path}", dest, expected_size=size, progress=progress
+                f"{self.base_url}/{remote_path}",
+                dest,
+                expected_size=size,
+                expected_md5=md5,
+                progress=progress,
             )
             downloaded.append(dest)
         return DownloadResult(
@@ -252,11 +272,16 @@ class VoiceCatalog:
         dest: Path,
         *,
         expected_size: int = 0,
+        expected_md5: str | None = None,
         progress: ProgressCallback | None = None,
     ) -> None:
         part = dest.with_name(f"{dest.name}.part")
         header_len = 0
         written = 0
+        # Integrity check, not a security boundary: the manifest ships md5 and
+        # is fetched over the same TLS connection as the file, so this catches
+        # corruption and stale mirrors, not a hostile server.
+        digest = hashlib.md5(usedforsecurity=False)
         try:
             with urllib.request.urlopen(url, timeout=self.timeout) as response:
                 header_len = _as_int(response.headers.get("Content-Length"))
@@ -267,6 +292,7 @@ class VoiceCatalog:
                         if not chunk:
                             break
                         handle.write(chunk)
+                        digest.update(chunk)
                         written += len(chunk)
                         if progress is not None and total:
                             progress(dest.name, min(written, total), total)
@@ -277,7 +303,9 @@ class VoiceCatalog:
             part.unlink(missing_ok=True)
             raise VoiceCatalogError(f"cannot write voice file {dest}: {exc}") from exc
 
-        problem = _verify_size(url, written, header_len, expected_size)
+        problem = _verify_size(url, written, header_len, expected_size) or _verify_md5(
+            url, digest.hexdigest(), expected_md5
+        )
         if problem is not None:
             part.unlink(missing_ok=True)
             raise VoiceCatalogError(problem)
@@ -295,6 +323,17 @@ def _verify_size(url: str, written: int, header_len: int, expected_size: int) ->
         )
     if expected_size and not header_len and written != expected_size:
         return f"download of {url} was truncated: got {written} of {expected_size} bytes"
+    return None
+
+
+def _verify_md5(url: str, actual: str, expected: str | None) -> str | None:
+    """Return an error message when the bytes do not match the catalog digest."""
+    if expected and actual != expected:
+        return (
+            f"checksum mismatch for {url}: got md5 {actual}, the catalog lists {expected}; "
+            "the download is corrupt or the voice changed — retry, and if it keeps failing "
+            "download the .onnx and .onnx.json files manually"
+        )
     return None
 
 
