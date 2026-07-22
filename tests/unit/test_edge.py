@@ -179,6 +179,16 @@ class TestAvailabilityWithPackage:
 
 
 class TestWithoutPackage:
+    @pytest.fixture(autouse=True)
+    def _hide_edge_tts(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Make ``import edge_tts`` fail even when the [edge] extra is installed.
+
+        A ``None`` entry in ``sys.modules`` makes the import statement raise
+        ImportError, so these tests exercise the missing-package path on a
+        developer machine too — not only on CI, where the extra is absent.
+        """
+        monkeypatch.setitem(sys.modules, "edge_tts", None)
+
     def test_availability_reports_missing_package(self) -> None:
         assert "edge_tts" not in sys.modules or sys.modules["edge_tts"] is None
         availability = EdgeProvider().availability()

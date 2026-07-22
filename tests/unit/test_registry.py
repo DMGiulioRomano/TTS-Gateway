@@ -69,6 +69,7 @@ class TestRegistration:
             registry.get("nope")
 
 
+@pytest.mark.real_entry_points
 class TestEntryPoints:
     class FakeEntryPoint:
         def __init__(self, name: str, target: object, broken: bool = False) -> None:
