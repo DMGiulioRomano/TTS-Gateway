@@ -84,6 +84,25 @@ token is set.
 | `history_size`      | `50`                | Finished utterances kept in `/v1/status` and `/v1/utterances/{id}`. |
 | `max_text_length`   | `10000`             | Longer texts are rejected with 422.                      |
 
+#### `speech.chunking`
+
+Sentence-level pipelining for long texts: the gateway speaks the first
+sentence while the next one synthesizes, so a paragraph starts playing almost
+immediately instead of after the whole thing is synthesized. It is transparent
+— one utterance id, the same lifecycle, `interrupt`/`stop` still cancels
+everything at once, `wait: true` still waits for the last sentence — and adds
+only an optional `utterance.progress` event per chunk (see `api.md`).
+
+| Key         | Default | Meaning                                                                 |
+| ----------- | ------- | ----------------------------------------------------------------------- |
+| `enabled`   | `true`  | `false` restores exactly one clip per utterance (the pre-pipelining behaviour). |
+| `min_chars` | `400`   | Only texts at least this long are split; shorter ones stay a single clip. |
+
+Chunk boundaries are sentence terminators (`. ! ? …`) with guards for common
+titles and initials (`Dr.`, `e.g.`); a run-on with no punctuation is hard-split
+so it still pipelines. `/v1/synthesize` (synthesize-to-file) is unaffected — it
+always returns one clip.
+
 ### `playback`
 
 | Key       | Default | Meaning                                                              |

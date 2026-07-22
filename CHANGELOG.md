@@ -8,6 +8,22 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **Sentence-level pipelining for long texts** (`speech.chunking`, on by
+  default): a long text is split into sentences and the gateway speaks the
+  first one while the next synthesizes (look-ahead depth one, on a single-slot
+  `ThreadPoolExecutor` owned by the playback worker — no second worker thread),
+  so a paragraph starts speaking almost immediately instead of after the whole
+  synthesis. It is transparent: one utterance id and the same
+  `QUEUED → SYNTHESIZING → SPEAKING → FINISHED` lifecycle, `interrupt`/`stop`
+  still cancels all remaining chunks at once, `wait: true` still waits for the
+  last sentence, and the provider contract is unchanged (each chunk is a
+  complete text in, a complete clip out). Adds an optional `utterance.progress`
+  event (`chunk`, `total_chunks`) for UIs. New strict config section
+  `speech.chunking` (`enabled`, `min_chars` = 400); disabling it — or a text
+  shorter than `min_chars` — restores exactly one clip per utterance. The
+  splitter (`core/chunking.py`) is a small, dependency-free regex splitter with
+  title/initial guards and a max-length hard-split. `/v1/synthesize` is
+  unaffected. No new runtime dependency.
 - **openai + elevenlabs providers** (cloud, opt-in, **no new dependency**): two
   premium cloud engines over stdlib `urllib` only — no SDK, no extra — so the
   "local-first with interchangeable engines" story now includes cloud voices

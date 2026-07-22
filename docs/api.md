@@ -259,8 +259,15 @@ matching response. WebSocket `speak` never waits — watch the events instead.
 
 Event types: `utterance.queued`, `utterance.synthesizing`,
 `utterance.speaking` (payload includes `duration_seconds` when known),
-`utterance.finished`, `utterance.cancelled`, `utterance.failed`, and
-`queue.cleared` (`{"cancelled": n}`).
+`utterance.progress`, `utterance.finished`, `utterance.cancelled`,
+`utterance.failed`, and `queue.cleared` (`{"cancelled": n}`).
+
+`utterance.progress` is emitted only for a **long text that was pipelined**
+into sentence chunks (`speech.chunking`): one per chunk, as it starts
+playing, carrying the utterance snapshot plus `chunk` (1-based) and
+`total_chunks`. The lifecycle events are unchanged — still one
+`synthesizing`/`speaking`/`finished` for the whole utterance — so a consumer
+that ignores `utterance.progress` sees exactly the old stream.
 
 Delivery notes: each event's `data` is a snapshot taken at publish time and
 is authoritative; cross-event *ordering* is best-effort. Slow consumers have
