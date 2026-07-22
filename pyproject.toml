@@ -48,6 +48,12 @@ dev = [
 edge = [
     "edge-tts>=6.1",
 ]
+# Local neural TTS via kokoro-onnx (ONNX Runtime, CPU-friendly). Optional so the
+# gateway never requires it; the provider lazy-imports it. Needs a model and a
+# voices file downloaded separately (see docs/providers.md).
+kokoro = [
+    "kokoro-onnx>=0.4",
+]
 
 [project.urls]
 Homepage = "https://github.com/DMGiulioRomano/TTS-Daemon"
@@ -62,6 +68,7 @@ tts-daemon = "tts_daemon.cli:main"
 piper = "tts_daemon.providers.piper:PiperProvider"
 tone = "tts_daemon.providers.tone:ToneProvider"
 edge = "tts_daemon.providers.edge:EdgeProvider"
+kokoro = "tts_daemon.providers.kokoro:KokoroProvider"
 
 [tool.setuptools.packages.find]
 where = ["src"]

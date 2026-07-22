@@ -51,3 +51,8 @@ providers:
     default_voice: en-US-AriaNeural
     # default_pitch: "+0Hz"   # optional edge pitch/volume used when a request omits them
     # default_volume: "+0%"
+  kokoro:                # optional: pip install 'tts-daemon[kokoro]' (local neural, offline)
+    # model_path: null   # ONNX model; default: ~/.local/share/tts-daemon/kokoro/kokoro-v1.0.onnx
+    # voices_path: null  # voices file; default: ~/.local/share/tts-daemon/kokoro/voices-v1.0.bin
+    default_voice: af_sarah
+    lang: en-us          # language for grapheme-to-phoneme (override per request via options.lang)

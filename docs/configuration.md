@@ -131,6 +131,32 @@ Bypass the cache for a single request with the `no_cache` option, e.g.
 | --------------- | ------- | ------------------------------------ |
 | `default_voice` | `mid`   | `low`, `mid`, or `high` beep pitch.  |
 
+### `providers.kokoro` (optional extra)
+
+A small, high-quality **local** neural engine (~82M params) via
+[`kokoro-onnx`](https://github.com/thewh1teagle/kokoro-onnx) (ONNX Runtime,
+CPU-friendly). Fully offline — nothing leaves the machine. Install the extra and
+download the model + voices files once:
+
+```sh
+pip install 'tts-daemon[kokoro]'
+mkdir -p ~/.local/share/tts-daemon/kokoro && cd ~/.local/share/tts-daemon/kokoro
+curl -LO https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0/kokoro-v1.0.onnx
+curl -LO https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0/voices-v1.0.bin
+```
+
+| Key             | Default                                             | Meaning                                                    |
+| --------------- | --------------------------------------------------- | ---------------------------------------------------------- |
+| `model_path`    | `~/.local/share/tts-daemon/kokoro/kokoro-v1.0.onnx` | Path to the ONNX model file.                               |
+| `voices_path`   | `~/.local/share/tts-daemon/kokoro/voices-v1.0.bin`  | Path to the voices file.                                   |
+| `default_voice` | `af_sarah`                                           | Voice used when a request names none. List them with `tts-daemon voices --provider kokoro`. |
+| `lang`          | `en-us`                                             | Language for the grapheme-to-phoneme step.                 |
+
+Per-request `options` accepts `lang` (overrides the setting for one request);
+`speed` maps to the engine's native speed parameter. Output is WAV. The
+`availability()` reason tells you which piece is missing — the package, the
+model file, or the voices file — with the download link.
+
 ### `providers.edge` (optional extra)
 
 Free Microsoft neural voices via the [`edge-tts`](https://pypi.org/project/edge-tts/)
