@@ -195,6 +195,86 @@ class TestQueries:
         assert service.find_utterance("nope") is None
 
 
+class RecordingProvider(ToneProvider):
+    """Tone provider that records the text of every synthesize call."""
+
+    name = "recording"
+
+    def __init__(self, settings=None) -> None:
+        super().__init__(settings)
+        self.texts: list[str] = []
+        self.speeds: list[float] = []
+
+    def synthesize(self, request):
+        self.texts.append(request.text)
+        self.speeds.append(request.speed)
+        return super().synthesize(request)
+
+
+class TestChunking:
+    LONG_TEXT = "Alpha beta gamma delta epsilon. " * 20  # 640 chars, 20 sentences
+
+    def _event_log(self, service: SpeechService) -> list[str]:
+        seen: list[str] = []
+        service.events.subscribe(lambda event: seen.append(event.type))
+        return seen
+
+    def test_long_text_is_pipelined(self) -> None:
+        service = build_service()  # chunking enabled by default, min_chars=400
+        seen = self._event_log(service)
+        try:
+            utterance = service.speak(self.LONG_TEXT)
+            assert service.wait_for(utterance, timeout=5)
+            assert utterance.state is UtteranceState.FINISHED
+            # One lifecycle each, plus one progress event per chunk.
+            assert seen.count("utterance.synthesizing") == 1
+            assert seen.count("utterance.speaking") == 1
+            assert seen.count("utterance.finished") == 1
+            assert seen.count("utterance.progress") > 1
+            # The utterance still reports the whole text, not a chunk.
+            assert utterance.snapshot()["text"] == self.LONG_TEXT
+        finally:
+            service.close()
+
+    def test_short_text_is_not_chunked(self) -> None:
+        service = build_service()
+        seen = self._event_log(service)
+        try:
+            utterance = service.speak("Short one. Short two.")
+            assert service.wait_for(utterance, timeout=5)
+            assert "utterance.progress" not in seen
+        finally:
+            service.close()
+
+    def test_disabled_chunking_keeps_one_clip(self) -> None:
+        config = make_config(speech={"chunking": {"enabled": False}})
+        service = build_service(config=config)
+        seen = self._event_log(service)
+        try:
+            utterance = service.speak(self.LONG_TEXT)
+            assert service.wait_for(utterance, timeout=5)
+            assert utterance.state is UtteranceState.FINISHED
+            assert "utterance.progress" not in seen
+        finally:
+            service.close()
+
+    def test_chunks_carry_the_sentences_and_keep_speed(self) -> None:
+        service = build_service(provider_classes=(ToneProvider, RecordingProvider))
+        try:
+            utterance = service.speak(self.LONG_TEXT, provider="recording", speed=1.5)
+            assert service.wait_for(utterance, timeout=5)
+            recorder = service.registry.get("recording")
+            # The paragraph reached the provider as many single-sentence calls,
+            # each rebuilt from the original request (so speed is preserved) and
+            # together covering the whole text.
+            assert len(recorder.texts) > 1
+            assert all(text.endswith(".") for text in recorder.texts)
+            assert " ".join(recorder.texts).split() == self.LONG_TEXT.split()
+            assert set(recorder.speeds) == {1.5}
+        finally:
+            service.close()
+
+
 def test_close_is_idempotent() -> None:
     service = build_service()
     service.close()
