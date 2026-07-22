@@ -8,6 +8,48 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **Community-health files**: GitHub issue forms (bug report, feature request,
+  provider request), a pull-request template (with a `make check` / docs /
+  CHANGELOG checklist), and a Contributor Covenant `CODE_OF_CONDUCT.md`.
+  Blank issues are disabled so reports come through the forms; questions are
+  routed to Discussions via a contact link.
+- **edge-tts provider** (optional extra `pip install 'tts-daemon[edge]'`): free
+  Microsoft neural voices — hundreds of languages, no API key, GPU, or model
+  download — registered as the `edge` provider via the entry-point group and
+  **lazy-imported**, so the gateway never requires the package. `speed` maps to
+  the edge rate (`1.5` → `+50%`); `options.pitch` / `options.volume` pass
+  through (unknown options rejected); `voices()` come from the package (cached).
+  Output is MP3 (`AudioFormat.MP3`), routed to an MP3-capable player
+  (ffplay/mpv/afplay). `availability()` explains how to install the package;
+  synthesis failures carry an actionable, cloud-aware message. Documented as a
+  cloud, unofficial-endpoint provider (privacy note in `docs/providers.md` and
+  `docs/configuration.md`); not added to the default `provider_priority`.
+- **Built-in Piper voice downloader** (`tts-daemon download <voice>`): fetches a
+  voice's `.onnx` model and `.onnx.json` config into the configured `models_dir`
+  (created if missing) straight from the `rhasspy/piper-voices` catalog, so
+  onboarding no longer needs `python3 -m piper.download_voices`. Downloads are
+  verified against the catalog's size and md5 digest, streamed to a `*.part`
+  sidecar and renamed atomically, and
+  idempotent (already-present voices are skipped; `--force` re-fetches).
+  `tts-daemon download --list [--language xx]` browses the catalog (id, language,
+  quality, size). Unknown ids suggest the closest matches; offline gives an
+  actionable message. New stdlib-only `tts_daemon.voices` module (no new runtime
+  deps); the piper `availability()` hint and the README/install quickstart now
+  point at the command.
+- **Optional bearer-token authentication** (`server.auth_token`, env
+  `TTS_DAEMON__SERVER__AUTH_TOKEN`): off by default (unauthenticated on
+  loopback). When set, every `/v1` route requires `Authorization: Bearer
+  <token>`; `/v1/ws` and `/v1/events` also accept a `?token=` query param
+  (browsers can't set headers on `WebSocket`/`EventSource`). `GET /health` and
+  the playground at `/` stay open. Tokens are compared in constant time
+  (`secrets.compare_digest`); a wrong/missing token returns `401` with the
+  standard `{"detail": …}` body. Wired as a FastAPI dependency on the `/v1`
+  router, so the scheme is documented in the OpenAPI schema. The gateway logs a
+  warning at startup when `server.host` is not loopback and no token is set. The
+  Python client and CLI gain a `token` argument / `--token` flag
+  (`TTS_DAEMON_TOKEN` env); the playground prompts for a token and stores it in
+  `localStorage`; the browser userscript (a `TOKEN` constant) and the Claude
+  Code hook (`TTS_DAEMON_TOKEN` env) can send it too.
 - **Web playground at `/`**: the root page is now an interactive playground
   instead of a static info page. Type text, pick a provider and voice
   (populated live from `/v1/providers` and `/v1/voices`, unavailable providers
@@ -38,6 +80,22 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   config section, falling back to the provider default), and `speed`; `wav`
   response format supported (others → 422). Runnable `examples/openai_compat.py`
   using the official `openai` client.
+
+### Fixed
+
+- **WebSocket endpoints now work outside the test suite**: `websockets` is a
+  runtime dependency. Plain `uvicorn` ships no WebSocket implementation, so
+  `tts-daemon serve` logged "No supported WebSocket library detected" and
+  rejected every `/v1/ws` handshake — breaking the playground's live event
+  panel. Invisible to the tests because `TestClient` speaks WebSocket
+  in-process; a test now asserts the dependency is installed.
+- **Test suite is hermetic on a developer machine**, not only on CI. The edge
+  provider leaked in through its entry point (its `voices()` really called
+  Microsoft) whenever the `[edge]` extra was installed, and piper's default
+  `models_dir` picked up voices downloaded into the real
+  `~/.local/share/tts-daemon/piper`. Both are now pinned off in the shared
+  fixtures, and the "missing edge-tts package" tests stub the import instead of
+  assuming the package is absent.
 
 ## [0.1.0] - 2026-07-21
 

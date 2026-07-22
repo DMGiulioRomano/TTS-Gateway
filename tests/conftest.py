@@ -26,11 +26,34 @@ from tts_daemon.core.models import AudioClip, Availability, SynthesisRequest, Vo
 from tts_daemon.providers.tone import ToneProvider
 
 
+@pytest.fixture(autouse=True)
+def _isolate_registry(request: pytest.FixtureRequest, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Keep the provider registry hermetic on a developer machine.
+
+    ``load_entry_points`` would pick up whatever plugins the venv happens to
+    have installed — notably the ``edge`` provider from the [edge] extra, whose
+    ``voices()`` calls Microsoft over the network. CI never installs the extra,
+    so the leak is invisible there; pinning it off keeps the suite offline
+    everywhere.
+
+    Tests of the discovery mechanism itself opt out with
+    ``@pytest.mark.real_entry_points``.
+    """
+    from tts_daemon.providers.registry import ProviderRegistry
+
+    if request.node.get_closest_marker("real_entry_points"):
+        return
+    monkeypatch.setattr(ProviderRegistry, "load_entry_points", lambda self: None)
+
+
 def make_config(**overrides: Any) -> GatewayConfig:
     """A GatewayConfig for tests: tone provider, silent playback, no file/env IO."""
     data: dict[str, Any] = {
         "speech": {"default_provider": "tone", "queue_size": 8, "history_size": 10},
         "playback": {"backend": "null"},
+        # Point piper at a path that cannot exist, so a voice the developer
+        # downloaded into the real models_dir never makes piper "available".
+        "providers": {"piper": {"models_dir": "/nonexistent/tts-daemon-tests"}},
         # Off by default so tests never touch the real on-disk cache; cache
         # tests opt in with cache={"enabled": True, "dir": <tmp_path>}.
         "cache": {"enabled": False},

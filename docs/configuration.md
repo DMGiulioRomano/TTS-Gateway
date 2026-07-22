@@ -39,9 +39,40 @@ TTS_DAEMON__PLAYBACK__BACKEND=null
 
 | Key            | Default       | Meaning                                                       |
 | -------------- | ------------- | ------------------------------------------------------------- |
-| `host`         | `127.0.0.1`   | Bind address. Keep on localhost unless you trust the network (there is no authentication). |
+| `host`         | `127.0.0.1`   | Bind address. Keep on localhost unless you trust the network or set `auth_token`. |
 | `port`         | `5111`        | Bind port.                                                    |
 | `cors_origins` | `["*"]`       | Origins allowed for browser clients. `[]` disables CORS headers. |
+| `auth_token`   | *unset*       | When set, every `/v1` route requires this bearer token (see below). `null` leaves the gateway open. |
+
+#### Authentication
+
+By default the gateway is unauthenticated — fine on loopback. Set
+`server.auth_token` (or the `TTS_DAEMON__SERVER__AUTH_TOKEN` env var) before
+binding beyond localhost:
+
+```sh
+TTS_DAEMON__SERVER__AUTH_TOKEN="$(openssl rand -hex 32)" \
+  TTS_DAEMON__SERVER__HOST=0.0.0.0 tts-daemon serve
+```
+
+When a token is set:
+
+- every `/v1/*` route requires `Authorization: Bearer <token>`;
+- `/v1/ws` and `/v1/events` also accept the token as a `?token=<token>` query
+  parameter, because browsers cannot set headers on `WebSocket`/`EventSource`;
+- `GET /health` and the playground at `/` stay open (the playground prompts for
+  a token and remembers it in `localStorage`);
+- a wrong or missing token returns `401` with the usual `{"detail": …}` body.
+
+The token is compared in constant time. The CLI and Python client pick it up
+from `--token` or the `TTS_DAEMON_TOKEN` env var:
+
+```sh
+TTS_DAEMON_TOKEN=… tts-daemon speak "authenticated hello" --url http://host:5111
+```
+
+The gateway logs a warning at startup when `server.host` is not loopback and no
+token is set.
 
 ### `speech`
 
@@ -99,6 +130,32 @@ Bypass the cache for a single request with the `no_cache` option, e.g.
 | Key             | Default | Meaning                              |
 | --------------- | ------- | ------------------------------------ |
 | `default_voice` | `mid`   | `low`, `mid`, or `high` beep pitch.  |
+
+### `providers.edge` (optional extra)
+
+Free Microsoft neural voices via the [`edge-tts`](https://pypi.org/project/edge-tts/)
+package — hundreds of voices, no API key, no local model. Install the extra to
+enable it:
+
+```sh
+pip install 'tts-daemon[edge]'
+```
+
+| Key              | Default             | Meaning                                                    |
+| ---------------- | ------------------- | ---------------------------------------------------------- |
+| `default_voice`  | `en-US-AriaNeural`  | Voice used when a request names none. List them with `tts-daemon voices --provider edge`. |
+| `default_pitch`  | *unset*             | edge `pitch` applied when a request omits it, e.g. `"+10Hz"`. |
+| `default_volume` | *unset*             | edge `volume` applied when a request omits it, e.g. `"-20%"`. |
+
+Per-request `options` accepts `pitch` and `volume` (same string format);
+`speed` maps to the edge rate (`1.5` → `+50%`). Output is MP3, which the player
+routes to a capable command (`ffplay`/`mpv`/`afplay`).
+
+> **Privacy / reliability note.** edge-tts is a **cloud** provider: the text you
+> synthesize is sent to Microsoft's servers, over an **unofficial** endpoint
+> that can change or break at any time, and it needs network access. Prefer
+> Piper for anything private or offline. This is why `edge` is an opt-in extra
+> and is not in the default `provider_priority`.
 
 ### Third-party providers
 

@@ -53,6 +53,7 @@ src/tts_daemon/
 ├── api/             FastAPI app, REST routes, WebSocket, DTOs
 ├── config.py        layered configuration (defaults ← YAML ← env)
 ├── client.py        stdlib-only HTTP client (used by the CLI)
+├── voices.py        stdlib-only Piper voice catalog + downloader
 ├── cli.py           argparse CLI
 └── defaults.py      dependency-free host/port constants
 tests/

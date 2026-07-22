@@ -109,9 +109,8 @@ provider.
 ```sh
 pip install piper-tts
 
-mkdir -p ~/.local/share/tts-daemon/piper
-python3 -m piper.download_voices en_US-lessac-medium \
-  --data-dir ~/.local/share/tts-daemon/piper
+tts-daemon download en_US-lessac-medium   # into ~/.local/share/tts-daemon/piper
+# browse first: tts-daemon download --list [--language it]
 
 tts-daemon speak "Now with an actual voice"
 ```

@@ -61,18 +61,25 @@ location).
 
 ### 2. A voice
 
-Voices are `.onnx` model files with a `.onnx.json` sidecar. The gateway
-looks in `~/.local/share/tts-daemon/piper` by default:
+Voices are `.onnx` model files with a `.onnx.json` sidecar. The gateway can
+fetch them for you into its models directory
+(`~/.local/share/tts-daemon/piper` by default), creating it if needed:
 
 ```sh
-mkdir -p ~/.local/share/tts-daemon/piper
-python3 -m piper.download_voices en_US-lessac-medium \
-  --data-dir ~/.local/share/tts-daemon/piper
+tts-daemon download en_US-lessac-medium
 ```
 
-Any voice from the [Piper voice catalogue](https://github.com/OHF-Voice/piper1-gpl/blob/main/docs/VOICES.md)
-works; download as many as you like and select per request with `voice`.
-If you already keep voices elsewhere, point the gateway at them:
+Browse the catalog first if you like — filter by language with `--language`:
+
+```sh
+tts-daemon download --list                # every voice (id, language, quality, size)
+tts-daemon download --list --language it  # just the Italian voices
+```
+
+Downloads are verified against their published size, written atomically, and
+skipped when already present (`--force` re-fetches). Download as many voices as
+you like and select per request with `voice`. If you already keep voices
+elsewhere, point the gateway at them:
 
 ```yaml
 # ~/.config/tts-daemon/config.yaml
@@ -165,11 +172,21 @@ launchctl load ~/Library/LaunchAgents/dev.tts-daemon.plist
 
 ## Security note
 
-The gateway has no authentication; anyone who can reach the port can make
-your speakers talk (and submit text to your TTS engine). The default bind of
-`127.0.0.1` keeps it private to your machine. If you change `server.host`,
-do it only on a network where that is acceptable, and restrict
-`server.cors_origins` accordingly.
+By default the gateway has no authentication; anyone who can reach the port
+can make your speakers talk (and submit text to your TTS engine). The default
+bind of `127.0.0.1` keeps it private to your machine.
+
+Before you change `server.host` to bind beyond localhost, set a bearer token
+so `/v1` requires `Authorization: Bearer <token>`:
+
+```sh
+TTS_DAEMON__SERVER__AUTH_TOKEN="$(openssl rand -hex 32)" \
+  TTS_DAEMON__SERVER__HOST=0.0.0.0 tts-daemon serve
+```
+
+See [configuration.md](configuration.md#authentication) for the details
+(query-param token for browsers, CLI/client `--token`, the startup warning).
+Restrict `server.cors_origins` too when you expose the gateway.
 
 ## Uninstall
 
