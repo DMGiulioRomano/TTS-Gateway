@@ -9,11 +9,13 @@ from __future__ import annotations
 
 import dataclasses
 import logging
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
 from tts_daemon.config import GatewayConfig
 from tts_daemon.core.cache import SynthesisCache, cache_key, default_cache_dir
+from tts_daemon.core.chunking import split_into_chunks
 from tts_daemon.core.errors import ProviderUnavailableError
 from tts_daemon.core.events import EventBus
 from tts_daemon.core.interfaces import AudioPlayer, TTSProvider
@@ -91,8 +93,34 @@ class SpeechService:
         utterance = Utterance(request, chosen.name)
         if interrupt:
             self._queue.clear()
-        self._queue.submit(utterance, lambda: self._synthesize_cached(chosen, request))
+        chunk_texts = self._plan_chunks(request.text)
+        if len(chunk_texts) > 1:
+            synthesizers = [
+                self._chunk_synthesizer(chosen, request, chunk) for chunk in chunk_texts
+            ]
+            self._queue.submit_chunked(utterance, synthesizers)
+        else:
+            self._queue.submit(utterance, lambda: self._synthesize_cached(chosen, request))
         return utterance
+
+    def _plan_chunks(self, text: str) -> list[str]:
+        """Split ``text`` into sentence chunks when pipelining applies.
+
+        Returns a single-element list — "don't pipeline" — when chunking is
+        disabled, the text is shorter than ``min_chars``, or the splitter finds
+        no sentence boundary. Only a length > 1 changes playback behaviour.
+        """
+        chunking = self._config.speech.chunking
+        if not chunking.enabled or len(text) < chunking.min_chars:
+            return [text]
+        return split_into_chunks(text) or [text]
+
+    def _chunk_synthesizer(
+        self, provider: TTSProvider, request: SynthesisRequest, chunk_text: str
+    ) -> Callable[[], AudioClip]:
+        """A zero-arg synthesizer for one chunk (same voice/speed/options)."""
+        chunk_request = dataclasses.replace(request, text=chunk_text)
+        return lambda: self._synthesize_cached(provider, chunk_request)
 
     def synthesize(
         self,

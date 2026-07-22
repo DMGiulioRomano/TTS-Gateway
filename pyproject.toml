@@ -84,7 +84,15 @@ where = ["src"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q"
-filterwarnings = ["error::DeprecationWarning:tts_daemon.*"]
+filterwarnings = [
+    "error::DeprecationWarning:tts_daemon.*",
+    # External and tracked (issue #19): Starlette's TestClient warns that using
+    # `httpx` (rather than "httpx2") is deprecated. It is a
+    # StarletteDeprecationWarning — a UserWarning subclass, so the rule above
+    # never matched it. Ignore it by message to keep the run warning-free; drop
+    # this once a Starlette release supports httpx2 and the dev `httpx` can move.
+    "ignore:Using `httpx` with `starlette.testclient` is deprecated:UserWarning",
+]
 markers = [
     "real_entry_points: let the registry discover installed entry-point plugins",
 ]

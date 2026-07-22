@@ -84,6 +84,25 @@ token is set.
 | `history_size`      | `50`                | Finished utterances kept in `/v1/status` and `/v1/utterances/{id}`. |
 | `max_text_length`   | `10000`             | Longer texts are rejected with 422.                      |
 
+#### `speech.chunking`
+
+Sentence-level pipelining for long texts: the gateway speaks the first
+sentence while the next one synthesizes, so a paragraph starts playing almost
+immediately instead of after the whole thing is synthesized. It is transparent
+— one utterance id, the same lifecycle, `interrupt`/`stop` still cancels
+everything at once, `wait: true` still waits for the last sentence — and adds
+only an optional `utterance.progress` event per chunk (see `api.md`).
+
+| Key         | Default | Meaning                                                                 |
+| ----------- | ------- | ----------------------------------------------------------------------- |
+| `enabled`   | `true`  | `false` restores exactly one clip per utterance (the pre-pipelining behaviour). |
+| `min_chars` | `400`   | Only texts at least this long are split; shorter ones stay a single clip. |
+
+Chunk boundaries are sentence terminators (`. ! ? …`) with guards for common
+titles and initials (`Dr.`, `e.g.`); a run-on with no punctuation is hard-split
+so it still pipelines. `/v1/synthesize` (synthesize-to-file) is unaffected — it
+always returns one clip.
+
 ### `playback`
 
 | Key       | Default | Meaning                                                              |
@@ -136,14 +155,24 @@ Bypass the cache for a single request with the `no_cache` option, e.g.
 A small, high-quality **local** neural engine (~82M params) via
 [`kokoro-onnx`](https://github.com/thewh1teagle/kokoro-onnx) (ONNX Runtime,
 CPU-friendly). Fully offline — nothing leaves the machine. Install the extra and
-download the model + voices files once:
+download the model + voices pair once:
 
 ```sh
 pip install 'tts-daemon[kokoro]'
-mkdir -p ~/.local/share/tts-daemon/kokoro && cd ~/.local/share/tts-daemon/kokoro
-curl -LO https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0/kokoro-v1.0.onnx
-curl -LO https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0/voices-v1.0.bin
+tts-daemon download kokoro
 ```
+
+`download kokoro` is a reserved target (distinct from a Piper voice id): it
+fetches both `kokoro-v1.0.onnx` and `voices-v1.0.bin` from the pinned
+kokoro-onnx release into `~/.local/share/tts-daemon/kokoro/` (or wherever
+`providers.kokoro.model_path` / `voices_path` point). It streams to a `*.part`
+sidecar and renames atomically, skips files already present (pass `--force` to
+refetch), and honours `--models-dir` to place the pair elsewhere. The release
+publishes no checksum manifest, so — like a Piper voice without an md5 digest —
+only the download's `Content-Length` is verified; a truncated file is refused
+rather than installed. You can still fetch the two files by hand from
+<https://github.com/thewh1teagle/kokoro-onnx/releases/tag/model-files-v1.0> if
+you prefer.
 
 | Key             | Default                                             | Meaning                                                    |
 | --------------- | --------------------------------------------------- | ---------------------------------------------------------- |

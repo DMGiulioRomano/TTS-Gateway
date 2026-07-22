@@ -8,6 +8,22 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **Sentence-level pipelining for long texts** (`speech.chunking`, on by
+  default): a long text is split into sentences and the gateway speaks the
+  first one while the next synthesizes (look-ahead depth one, on a single-slot
+  `ThreadPoolExecutor` owned by the playback worker — no second worker thread),
+  so a paragraph starts speaking almost immediately instead of after the whole
+  synthesis. It is transparent: one utterance id and the same
+  `QUEUED → SYNTHESIZING → SPEAKING → FINISHED` lifecycle, `interrupt`/`stop`
+  still cancels all remaining chunks at once, `wait: true` still waits for the
+  last sentence, and the provider contract is unchanged (each chunk is a
+  complete text in, a complete clip out). Adds an optional `utterance.progress`
+  event (`chunk`, `total_chunks`) for UIs. New strict config section
+  `speech.chunking` (`enabled`, `min_chars` = 400); disabling it — or a text
+  shorter than `min_chars` — restores exactly one clip per utterance. The
+  splitter (`core/chunking.py`) is a small, dependency-free regex splitter with
+  title/initial guards and a max-length hard-split. `/v1/synthesize` is
+  unaffected. No new runtime dependency.
 - **openai + elevenlabs providers** (cloud, opt-in, **no new dependency**): two
   premium cloud engines over stdlib `urllib` only — no SDK, no extra — so the
   "local-first with interchangeable engines" story now includes cloud voices
@@ -35,8 +51,19 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   the language per request (unknown options rejected), and `voices()` lists the
   bundled voice names from the voices file. Output is WAV (a new stdlib-only
   `providers/_audio.floats_to_wav` helper, shared with the tone provider). No
-  new runtime dependency. Downloading the model/voices pair via `tts-daemon
-  download` is tracked as a follow-up.
+  new runtime dependency.
+- **`tts-daemon download kokoro`**: the built-in downloader now fetches the
+  kokoro model/voices pair as well as Piper voices. `kokoro` is a reserved
+  `download` target (distinct from a Piper voice id) that grabs both
+  `kokoro-v1.0.onnx` and `voices-v1.0.bin` from the pinned kokoro-onnx release
+  into `~/.local/share/tts-daemon/kokoro/` — respecting the
+  `providers.kokoro.model_path` / `voices_path` overrides and `--models-dir`.
+  Streams to a `*.part` sidecar and renames atomically, idempotent (skips
+  present files, `--force` re-fetches), mirroring the Piper downloader. The
+  kokoro release publishes no digest manifest, so only the download's
+  `Content-Length` is verified (a truncated file is refused, never installed);
+  `docs/configuration.md` now points at the command instead of a manual `curl`.
+  Still stdlib `urllib` only — no new runtime dependency.
 - **Community-health files**: GitHub issue forms (bug report, feature request,
   provider request), a pull-request template (with a `make check` / docs /
   CHANGELOG checklist), and a Contributor Covenant `CODE_OF_CONDUCT.md`.
@@ -109,6 +136,23 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   config section, falling back to the provider default), and `speed`; `wav`
   response format supported (others → 422). Runnable `examples/openai_compat.py`
   using the official `openai` client.
+
+### Changed
+
+- **CI now includes a Windows job** (`windows-latest`, Python 3.12) alongside
+  Ubuntu and macOS, and the `winsound` fallback player finally has smoke
+  coverage (import/selection, the WAV `SND_MEMORY` path, MP3 rejection, error
+  mapping, and `SND_PURGE` on stop) — driven through a monkeypatched
+  `winsound.PlaySound`, so the Windows runner stays silent and deterministic.
+- **Loudness is documented as the OS mixer's job**: there is deliberately no
+  request-level `volume` field (requests carry `speed` only; the request models
+  reject unknown fields, so `volume` returns 422). Engine-native loudness stays
+  available through `options` where a backend supports it (the `edge` provider's
+  `options.volume`). Documented in `docs/api.md`; a first-class field will be
+  revisited only once ≥2 backends support it natively.
+- The Starlette `TestClient` deprecation warning ("use httpx2") is now filtered
+  by message so the test run is warning-free; it is external and tracked, to be
+  dropped when a Starlette release supports httpx2.
 
 ### Fixed
 

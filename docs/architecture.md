@@ -83,7 +83,8 @@ fake everything.
 2. Resolve the provider name (explicit → configured default → `auto`
    priority scan over `availability()`).
 3. Create an `Utterance` (a small state machine) and submit it to the
-   `PlaybackQueue` together with a zero-argument `synthesize` closure.
+   `PlaybackQueue` with a zero-argument `synthesize` closure — or, for a long
+   text, one closure per sentence chunk (see *sentence-level pipelining*).
 4. Return 202 with the utterance snapshot.
 
 A single **worker thread** owns the rest of the lifecycle:
@@ -123,6 +124,9 @@ playback worker. The rules, enforced by comment and test:
 - `PlaybackQueue._condition` guards the deque, current item, history, and
   closed flag — and is **never held** while synthesizing, playing,
   publishing events, or transitioning utterance state.
+- The chunk look-ahead `ThreadPoolExecutor` (single slot) is driven **only**
+  by the one playback worker — one chunk in flight at a time — so it adds a
+  helper thread but no new shared state and needs no extra lock.
 - `Utterance` state changes go through `transition()` under the utterance's
   own lock; terminal states latch (a race can never resurrect a finished
   job).
@@ -132,15 +136,26 @@ playback worker. The rules, enforced by comment and test:
   for slow consumers). Event payloads are snapshots taken at publish time
   and are authoritative; cross-event ordering is best-effort.
 
-### Why whole clips instead of streaming audio
+### Whole clips, and sentence-level pipelining
 
-Providers return a complete `AudioClip`. Streaming would lower
-time-to-first-sound for long texts, but it infects every interface it
-touches (provider, queue, player, interruption, the HTTP API) with chunk
-lifecycle concerns, and Piper on local hardware synthesizes sentences in
-tens of milliseconds. For a *local* gateway the simplicity is worth more
-than the latency; a streaming provider interface could be added later as a
-separate optional port without breaking this one.
+Providers return a complete `AudioClip` — never a stream. True audio
+streaming would lower time-to-first-sound for long texts, but it infects
+every interface it touches (provider, queue, player, interruption, the HTTP
+API) with chunk lifecycle concerns.
+
+For long texts the gateway instead pipelines at **sentence granularity**
+(`speech.chunking`), which buys most of the latency win without any of that
+cost: the service splits the text into sentences (`core/chunking.py`, a pure
+regex splitter) and submits them as one chunked utterance; the worker speaks
+sentence N while sentence N+1 synthesizes on a single-slot
+`ThreadPoolExecutor` it owns (look-ahead depth one). Crucially this changes
+**nothing** in the contracts around it: the provider still receives a
+complete text and returns a complete clip, and the utterance keeps one id and
+the same `QUEUED → SYNTHESIZING → SPEAKING → FINISHED` state machine — a
+chunked run just adds an optional `utterance.progress` event per sentence.
+Disabling `speech.chunking` (or a text below `min_chars`) restores exactly
+one clip per utterance. A true streaming *provider* port could still be added
+later without disturbing this one.
 
 ## Providers
 
