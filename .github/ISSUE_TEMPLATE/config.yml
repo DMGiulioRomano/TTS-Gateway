@@ -1,0 +1,8 @@
+# Blank issues would bypass the forms, which exist so reports arrive with the
+# version, platform and provider already filled in. Questions belong in
+# Discussions, not in a blank issue.
+blank_issues_enabled: false
+contact_links:
+  - name: Question or idea
+    url: https://github.com/DMGiulioRomano/TTS-Daemon/discussions
+    about: Ask how something works, or float an idea before opening a request.

@@ -11,6 +11,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **Community-health files**: GitHub issue forms (bug report, feature request,
   provider request), a pull-request template (with a `make check` / docs /
   CHANGELOG checklist), and a Contributor Covenant `CODE_OF_CONDUCT.md`.
+  Blank issues are disabled so reports come through the forms; questions are
+  routed to Discussions via a contact link.
 - **edge-tts provider** (optional extra `pip install 'tts-daemon[edge]'`): free
   Microsoft neural voices — hundreds of languages, no API key, GPU, or model
   download — registered as the `edge` provider via the entry-point group and
@@ -26,7 +28,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   voice's `.onnx` model and `.onnx.json` config into the configured `models_dir`
   (created if missing) straight from the `rhasspy/piper-voices` catalog, so
   onboarding no longer needs `python3 -m piper.download_voices`. Downloads are
-  size-verified, streamed to a `*.part` sidecar and renamed atomically, and
+  verified against the catalog's size and md5 digest, streamed to a `*.part`
+  sidecar and renamed atomically, and
   idempotent (already-present voices are skipped; `--force` re-fetches).
   `tts-daemon download --list [--language xx]` browses the catalog (id, language,
   quality, size). Unknown ids suggest the closest matches; offline gives an
